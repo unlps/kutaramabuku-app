@@ -340,55 +340,40 @@ const Dashboard = () => {
                 Criar Ebook
               </Button>
             </Card> : <div>
-              <Carousel setApi={setEbooksCarouselApi} className="w-full max-w-full">
-                <CarouselContent className="-ml-2 md:-ml-3">
-                  {ebooks.map(ebook => <CarouselItem key={ebook.id} className="pl-2 md:pl-3 basis-[45%] md:basis-1/3 lg:basis-1/4">
-                      <Card 
-                        className="p-3 hover:shadow-card transition-shadow cursor-pointer"
-                        onClick={() => setSelectedEbook(ebook)}
-                      >
-                        <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                          {ebook.cover_image ? (
-                            <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" />
-                          ) : (
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                  {ebooks.map(ebook => (
+                    <div
+                      key={ebook.id}
+                      onClick={() => setSelectedEbook(ebook)}
+                      className="flex-shrink-0 w-40 cursor-pointer group"
+                    >
+                      <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
+                        {ebook.cover_image ? (
+                          <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
                             <BookOpen className="h-12 w-12 text-white" />
-                          )}
-                        </div>
-                        <h4 className="font-semibold mb-1 text-sm line-clamp-1">
-                          {stripHtml(ebook.title)}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                          {stripHtml(ebook.description || "Sem descrição")}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            {ebook.views}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Download className="h-3 w-3" />
-                            {ebook.downloads}
-                          </span>
-                        </div>
-                      </Card>
-                    </CarouselItem>)}
-                </CarouselContent>
-              </Carousel>
-              <div className="flex justify-center gap-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => ebooksCarouselApi?.scrollPrev()}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => ebooksCarouselApi?.scrollNext()}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="font-semibold text-sm line-clamp-1">
+                        {stripHtml(ebook.title)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {stripHtml(ebook.description || "Sem descrição")}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {ebook.views}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Download className="h-3 w-3" />
+                          {ebook.downloads}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>}
         </div>
