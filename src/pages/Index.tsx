@@ -76,7 +76,7 @@ const Index = () => {
       {/* Content */}
       <div className="flex-1 px-6 pt-8 pb-12 flex flex-col items-center">
         <h1 className="text-3xl font-bold text-center mb-3">
-          Bem-vindo ao <span className="text-[#fc5934]">Kutara Mabuku</span>
+          Bem-vindo ao <span className="text-primary">Kutara Mabuku</span>
         </h1>
         
         <div className="text-center mb-8 max-w-md h-16 flex items-center justify-center">
@@ -87,7 +87,7 @@ const Index = () => {
 
         {/* Message Slider Dots */}
         <div className="flex gap-2 mb-12">
-          {messages.map((_, index) => <div key={index} onClick={() => setCurrentSlide(index)} className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide ? "w-8 bg-[#fc5934]" : "w-2 bg-muted hover:bg-muted-foreground/50"}`} />)}
+          {messages.map((_, index) => <div key={index} onClick={() => setCurrentSlide(index)} className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide ? "w-8 bg-primary" : "w-2 bg-muted hover:bg-muted-foreground/50"}`} />)}
         </div>
 
         {/* Featured Books */}
@@ -105,11 +105,11 @@ const Index = () => {
             Continuar com Google
           </Button>
 
-          <Button onClick={() => navigate("/auth")} className="w-full h-14 text-base bg-[#fc5934] hover:bg-[#ff8568] text-white">
+          <Button onClick={() => navigate("/auth")} className="w-full h-14 text-base bg-primary hover:bg-primary-hover text-primary-foreground">
             Começar
           </Button>
 
-          <Button onClick={() => navigate("/auth")} variant="ghost" className="w-full h-14 text-base text-[#fc5934] hover:text-[#ff8568] hover:bg-accent">
+          <Button onClick={() => navigate("/auth")} variant="ghost" className="w-full h-14 text-base text-primary hover:text-primary-hover hover:bg-accent">
             Já Tenho uma Conta
           </Button>
         </div>
@@ -158,7 +158,7 @@ const Index = () => {
             <Button onClick={() => {
             setShowBookDialog(false);
             navigate("/auth");
-          }} className="w-full bg-[#fc5934] hover:bg-[#ff8568]">
+          }} className="w-full bg-primary hover:bg-primary-hover text-primary-foreground">
               Começar a Ler
             </Button>
           </div>
