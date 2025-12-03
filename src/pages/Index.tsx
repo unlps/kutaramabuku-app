@@ -76,7 +76,7 @@ const Index = () => {
       {/* Content */}
       <div className="flex-1 px-6 pt-8 pb-12 flex flex-col items-center">
         <h1 className="text-3xl font-bold text-center mb-3">
-          Bem-vindo ao <span className="text-primary">Kutara Mabuku</span>
+          Bem-vindo ao <span className="bg-gradient-primary bg-clip-text text-transparent">Kutara Mabuku</span>
         </h1>
         
         <div className="text-center mb-8 max-w-md h-16 flex items-center justify-center">
@@ -95,9 +95,6 @@ const Index = () => {
 
         {/* Action Buttons */}
         <div className="w-full max-w-md space-y-4">
-          <h1 className="text-3xl font-bold text-center bg-gradient-primary bg-clip-text text-transparent mb-6">
-            Kutara Mabuku
-          </h1>
           
           <Button onClick={handleGoogleLogin} disabled={isLoading} variant="outline" className="w-full h-14 text-base bg-background border-border hover:bg-accent rounded-xl">
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
