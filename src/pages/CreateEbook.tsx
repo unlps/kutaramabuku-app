@@ -317,7 +317,7 @@ const CreateEbook = () => {
     name: "Importar EPUB/PDF",
     description: "Faça upload de um arquivo existente para converter",
     icon: Upload,
-    gradient: "from-[#69A1EB] to-[#0E2038]",
+    gradient: "from-[#70CBD4] to-[#69A1EB]",
     recommended: false
   }];
   return <div className="min-h-screen bg-background">
