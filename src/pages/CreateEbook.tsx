@@ -310,14 +310,14 @@ const CreateEbook = () => {
     name: "Criar do Zero",
     description: "Comece com um eBook em branco e crie seu conteúdo",
     icon: BookOpen,
-    gradient: "from-[#fc5934] to-[#ff8568]",
+    gradient: "from-[#70CBD4] to-[#69A1EB]",
     recommended: true
   }, {
     id: "import" as const,
     name: "Importar EPUB/PDF",
     description: "Faça upload de um arquivo existente para converter",
     icon: Upload,
-    gradient: "from-[#ff8568] to-[#fc5934]",
+    gradient: "from-[#69A1EB] to-[#0E2038]",
     recommended: false
   }];
   return <div className="min-h-screen bg-background">
