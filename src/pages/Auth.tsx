@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { BookOpen, Chrome } from "lucide-react";
-import logo from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logo from "@/assets/logo-new.png";
 import authBackground from "@/assets/auth-background.png";
 import { authSchema } from "@/lib/validations";
 const Auth = () => {
@@ -132,7 +131,7 @@ const Auth = () => {
         <div className="bg-card rounded-2xl shadow-glow p-8 space-y-6">
           {/* Logo & Title */}
           <div className="text-center space-y-3">
-            <img src={theme === "dark" ? logoDark : logo} alt="PageSmith Hub" className="w-16 h-16 mx-auto" />
+            <img src={logo} alt="Kutara Mabuku" className="w-16 h-16 mx-auto" />
             
             <p className="text-muted-foreground">
               {isLogin ? "Bem-vindo de volta! Entre para continuar" : "Crie sua conta para começar"}

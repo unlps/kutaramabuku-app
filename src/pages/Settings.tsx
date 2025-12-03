@@ -10,8 +10,7 @@ import {
   CreditCard,
   Info
 } from "lucide-react";
-import logo from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 
 const Settings = () => {
@@ -27,7 +26,7 @@ const Settings = () => {
             <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted rounded-lg transition-colors">
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <img src={theme === "dark" ? logoDark : logo} alt="Kutara Mabuku" className="w-10 h-10 rounded-lg" />
+            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 rounded-lg" />
             <h1 className="text-2xl font-bold">Definições</h1>
           </div>
         </div>

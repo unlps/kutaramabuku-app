@@ -11,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, BookOpen, Upload, Sparkles, Type, Image, Minus, FileText, ArrowRight, Check, X } from "lucide-react";
-import logo from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logo from "@/assets/logo-new.png";
 import { EBOOK_TEMPLATES } from "@/components/templates/ebooks";
 import { ebookSchema, chapterSchema } from "@/lib/validations";
 type WizardStep = "origin" | "upload" | "mapping" | "metadata" | "template" | "complete";
@@ -328,7 +327,7 @@ const CreateEbook = () => {
             <Button variant="ghost" size="icon" onClick={() => step === "origin" ? navigate("/dashboard") : handleBack()}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <img src={theme === "dark" ? logoDark : logo} alt="Kutara Mabuku" className="w-10 h-10" />
+            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10" />
             <div>
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Criar Novo Ebook
