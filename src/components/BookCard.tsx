@@ -49,15 +49,16 @@ export const BookCard = ({
     <HoverCard openDelay={200}>
       <HoverCardTrigger asChild>
         <div
-          className="cursor-pointer group w-40 flex-shrink-0"
+          className="cursor-pointer group w-44 flex-shrink-0 bg-card rounded-xl shadow-md border border-border overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300"
           onClick={() => navigate(`/book/${id}`)}
         >
-          <div className="aspect-[2/3] relative overflow-hidden bg-muted rounded-lg mb-2 border-2 border-border group-hover:border-primary transition-colors">
+          {/* Cover Image */}
+          <div className="aspect-[2/3] relative overflow-hidden bg-muted">
             {coverImage && !imageError ? (
               <img
                 src={coverImage}
                 alt={title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={() => setImageError(true)}
               />
             ) : (
@@ -66,23 +67,27 @@ export const BookCard = ({
               </div>
             )}
             {price === 0 && (
-              <Badge className="absolute top-2 right-2 bg-primary text-xs">Grátis</Badge>
+              <Badge className="absolute top-2 right-2 bg-primary text-xs shadow-sm">Grátis</Badge>
             )}
           </div>
-          <h3 className="font-semibold text-sm line-clamp-1">{stripHtml(title)}</h3>
-          <p className="text-xs text-muted-foreground line-clamp-1">{author}</p>
-          <div className="flex items-center justify-between mt-1">
-            {genre && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                {genre}
-              </Badge>
-            )}
-            {rating > 0 && (
-              <div className="flex items-center gap-1">
-                <span className="text-yellow-500 text-xs">★</span>
-                <span className="text-xs font-medium">{rating.toFixed(1)}</span>
-              </div>
-            )}
+          
+          {/* Content */}
+          <div className="p-3 space-y-1.5">
+            <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{stripHtml(title)}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">{author}</p>
+            <div className="flex items-center justify-between pt-1">
+              {genre && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                  {genre}
+                </Badge>
+              )}
+              {rating > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-yellow-500 text-xs">★</span>
+                  <span className="text-xs font-medium">{rating.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </HoverCardTrigger>
