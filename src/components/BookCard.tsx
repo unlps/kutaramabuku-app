@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Calendar } from "lucide-react";
@@ -48,11 +48,11 @@ export const BookCard = ({
   return (
     <HoverCard openDelay={200}>
       <HoverCardTrigger asChild>
-        <Card
-          className="cursor-pointer overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02]"
+        <div
+          className="cursor-pointer group w-40 flex-shrink-0"
           onClick={() => navigate(`/book/${id}`)}
         >
-          <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+          <div className="aspect-[2/3] relative overflow-hidden bg-muted rounded-lg mb-2 border-2 border-border group-hover:border-primary transition-colors">
             {coverImage && !imageError ? (
               <img
                 src={coverImage}
@@ -61,32 +61,30 @@ export const BookCard = ({
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <FileText className="h-16 w-16 text-muted-foreground" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                <FileText className="h-12 w-12 text-white" />
               </div>
             )}
             {price === 0 && (
-              <Badge className="absolute top-2 right-2 bg-primary">Grátis</Badge>
+              <Badge className="absolute top-2 right-2 bg-primary text-xs">Grátis</Badge>
             )}
           </div>
-          <div className="p-4">
-            <h3 className="font-semibold text-lg line-clamp-2 mb-1">{stripHtml(title)}</h3>
-            <p className="text-sm text-muted-foreground mb-2">{author}</p>
-            <div className="flex items-center justify-between">
-              {genre && (
-                <Badge variant="outline" className="text-xs">
-                  {genre}
-                </Badge>
-              )}
-              {rating > 0 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-yellow-500">★</span>
-                  <span className="text-sm font-medium">{rating.toFixed(1)}</span>
-                </div>
-              )}
-            </div>
+          <h3 className="font-semibold text-sm line-clamp-1">{stripHtml(title)}</h3>
+          <p className="text-xs text-muted-foreground line-clamp-1">{author}</p>
+          <div className="flex items-center justify-between mt-1">
+            {genre && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                {genre}
+              </Badge>
+            )}
+            {rating > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-yellow-500 text-xs">★</span>
+                <span className="text-xs font-medium">{rating.toFixed(1)}</span>
+              </div>
+            )}
           </div>
-        </Card>
+        </div>
       </HoverCardTrigger>
       <HoverCardContent className="w-80" side="right">
         <div className="space-y-3">
