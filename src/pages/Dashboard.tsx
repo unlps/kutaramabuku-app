@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, BookOpen, Eye, Download, MessageSquare, Sparkles, ChevronRight, Trash2, Edit, ChevronLeft } from "lucide-react";
-import logo from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -269,7 +268,7 @@ const Dashboard = () => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={theme === "dark" ? logoDark : logo} alt="PageSmith Hub" className="w-10 h-10" />
+            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">Kutara Mabuku</h1>
           </div>
           <Button onClick={() => navigate("/conversas")} variant="ghost" size="icon">

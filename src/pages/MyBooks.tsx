@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { BookOpen, Eye, Download, ArrowLeft, Trash2, Edit, Globe, Lock } from "lucide-react";
-import logo from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -247,7 +246,7 @@ const MyBooks = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <img src={theme === "dark" ? logoDark : logo} alt="Kutara Mabuku" className="w-10 h-10" />
+            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">Meus Livros</h1>
           </div>
         </div>
