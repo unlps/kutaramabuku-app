@@ -35,7 +35,10 @@ const CreateEbook = () => {
   const [parsedChapters, setParsedChapters] = useState<ParsedChapter[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
-  const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
+  const [genres, setGenres] = useState<{
+    id: string;
+    name: string;
+  }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [isFree, setIsFree] = useState<boolean>(true);
   const [price, setPrice] = useState<string>("0");
@@ -43,15 +46,18 @@ const CreateEbook = () => {
   const {
     toast
   } = useToast();
-  const { theme } = useTheme();
+  const {
+    theme
+  } = useTheme();
   useEffect(() => {
     checkUser();
     loadUserProfile();
     fetchGenres();
   }, []);
-
   const fetchGenres = async () => {
-    const { data } = await supabase.from("genres").select("*").order("name");
+    const {
+      data
+    } = await supabase.from("genres").select("*").order("name");
     if (data) {
       setGenres(data);
     }
@@ -97,7 +103,6 @@ const CreateEbook = () => {
       description,
       author
     });
-
     if (!validationResult.success) {
       const firstError = validationResult.error.errors[0];
       toast({
@@ -123,7 +128,6 @@ const CreateEbook = () => {
         }
       }
     }
-
     setLoading(true);
     try {
       const {
@@ -265,7 +269,6 @@ const CreateEbook = () => {
       });
       return;
     }
-    
     setParsedChapters(chapters => chapters.map(ch => ch.id === chapterId ? {
       ...ch,
       [field]: value
@@ -327,7 +330,7 @@ const CreateEbook = () => {
             <Button variant="ghost" size="icon" onClick={() => step === "origin" ? navigate("/dashboard") : handleBack()}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10" />
+            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 object-cover" />
             <div>
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Criar Novo Ebook
@@ -495,21 +498,19 @@ const CreateEbook = () => {
                       <SelectValue placeholder="Selecione um gênero" />
                     </SelectTrigger>
                     <SelectContent>
-                      {genres.map((genre) => (
-                        <SelectItem key={genre.id} value={genre.name}>
+                      {genres.map(genre => <SelectItem key={genre.id} value={genre.name}>
                           {genre.name}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="price-type">Tipo de Preço</Label>
-                  <Select value={isFree ? "free" : "paid"} onValueChange={(value) => {
-                    setIsFree(value === "free");
-                    if (value === "free") setPrice("0");
-                  }}>
+                  <Select value={isFree ? "free" : "paid"} onValueChange={value => {
+                setIsFree(value === "free");
+                if (value === "free") setPrice("0");
+              }}>
                     <SelectTrigger id="price-type">
                       <SelectValue />
                     </SelectTrigger>
@@ -520,20 +521,10 @@ const CreateEbook = () => {
                   </Select>
                 </div>
 
-                {!isFree && (
-                  <div className="space-y-2">
+                {!isFree && <div className="space-y-2">
                     <Label htmlFor="price">Preço (MZN)</Label>
-                    <Input 
-                      id="price" 
-                      type="number" 
-                      min="0" 
-                      step="0.01"
-                      placeholder="0.00" 
-                      value={price} 
-                      onChange={e => setPrice(e.target.value)} 
-                    />
-                  </div>
-                )}
+                    <Input id="price" type="number" min="0" step="0.01" placeholder="0.00" value={price} onChange={e => setPrice(e.target.value)} />
+                  </div>}
 
                 <div className="space-y-2">
                   <Label htmlFor="cover">Capa (opcional)</Label>
