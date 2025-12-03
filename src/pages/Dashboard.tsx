@@ -54,7 +54,9 @@ const Dashboard = () => {
   const {
     toast
   } = useToast();
-  const { theme } = useTheme();
+  const {
+    theme
+  } = useTheme();
   useEffect(() => {
     checkUser();
     fetchData();
@@ -109,12 +111,11 @@ const Dashboard = () => {
       setTemplates(templatesData);
     }
   };
-
   const handleDeleteEbook = async () => {
     if (!selectedEbook) return;
-
-    const { error } = await supabase.from("ebooks").delete().eq("id", selectedEbook.id);
-    
+    const {
+      error
+    } = await supabase.from("ebooks").delete().eq("id", selectedEbook.id);
     if (error) {
       toast({
         title: "Erro ao apagar",
@@ -123,19 +124,15 @@ const Dashboard = () => {
       });
       return;
     }
-
     toast({
       title: "Ebook apagado",
       description: "O ebook foi apagado com sucesso"
     });
-    
     setSelectedEbook(null);
     fetchData();
   };
-
   const handleDownloadEbook = async () => {
     if (!selectedEbook) return;
-
     try {
       // Helper function to convert HTML to plain text
       const htmlToText = (html: string) => {
@@ -143,13 +140,11 @@ const Dashboard = () => {
         temp.innerHTML = html;
         return temp.textContent || temp.innerText || '';
       };
-
-      const { data: chapters } = await supabase
-        .from("chapters")
-        .select("*")
-        .eq("ebook_id", selectedEbook.id)
-        .order("chapter_order", { ascending: true });
-
+      const {
+        data: chapters
+      } = await supabase.from("chapters").select("*").eq("ebook_id", selectedEbook.id).order("chapter_order", {
+        ascending: true
+      });
       const pdf = new jsPDF();
       let yPosition = 20;
 
@@ -158,20 +153,18 @@ const Dashboard = () => {
         try {
           const img = new Image();
           img.src = selectedEbook.cover_image;
-          await new Promise<void>((resolve) => {
+          await new Promise<void>(resolve => {
             img.onload = () => resolve();
           });
-          
+
           // Get page dimensions
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
-          
+
           // Calculate dimensions to cover entire page
           const imgRatio = img.width / img.height;
           const pageRatio = pageWidth / pageHeight;
-          
           let finalWidth, finalHeight, xOffset, yOffset;
-          
           if (imgRatio > pageRatio) {
             // Image is wider - fit to height and crop width
             finalHeight = pageHeight;
@@ -185,7 +178,6 @@ const Dashboard = () => {
             xOffset = 0;
             yOffset = (pageHeight - finalHeight) / 2;
           }
-          
           pdf.addImage(img, 'JPEG', xOffset, yOffset, finalWidth, finalHeight);
         } catch (error) {
           console.error('Erro ao adicionar capa ao PDF:', error);
@@ -195,13 +187,11 @@ const Dashboard = () => {
       // Title page
       pdf.addPage();
       yPosition = 20;
-
       pdf.setFontSize(24);
       const titleText = htmlToText(selectedEbook.title);
       const titleLines = pdf.splitTextToSize(titleText, 170);
       pdf.text(titleLines, 20, yPosition);
       yPosition += titleLines.length * 12 + 20;
-
       if (selectedEbook.author) {
         pdf.setFontSize(14);
         pdf.text(`Escrito por ${selectedEbook.author}`, 20, yPosition);
@@ -218,19 +208,16 @@ const Dashboard = () => {
       }
 
       // Chapters
-      chapters?.forEach((chapter) => {
+      chapters?.forEach(chapter => {
         pdf.addPage();
         yPosition = 20;
-
         pdf.setFontSize(18);
         const chapterTitle = htmlToText(chapter.title);
         pdf.text(chapterTitle, 20, yPosition);
         yPosition += 15;
-
         pdf.setFontSize(12);
         const plainText = htmlToText(chapter.content);
         const contentLines = pdf.splitTextToSize(plainText, 170);
-        
         contentLines.forEach((line: string) => {
           if (yPosition > 280) {
             pdf.addPage();
@@ -240,20 +227,16 @@ const Dashboard = () => {
           yPosition += 7;
         });
       });
-
       pdf.save(`${htmlToText(selectedEbook.title)}.pdf`);
-      
-      // Update downloads count
-      await supabase
-        .from("ebooks")
-        .update({ downloads: selectedEbook.downloads + 1 })
-        .eq("id", selectedEbook.id);
 
+      // Update downloads count
+      await supabase.from("ebooks").update({
+        downloads: selectedEbook.downloads + 1
+      }).eq("id", selectedEbook.id);
       toast({
         title: "Download concluído",
         description: "O ebook foi baixado com sucesso"
       });
-      
       fetchData();
     } catch (error) {
       toast({
@@ -268,7 +251,7 @@ const Dashboard = () => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10" />
+            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 object-contain" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">Kutara Mabuku</h1>
           </div>
           <Button onClick={() => navigate("/conversas")} variant="ghost" size="icon">
@@ -340,20 +323,11 @@ const Dashboard = () => {
               </Button>
             </Card> : <div>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {ebooks.map(ebook => (
-                    <div
-                      key={ebook.id}
-                      onClick={() => setSelectedEbook(ebook)}
-                      className="flex-shrink-0 w-40 cursor-pointer group"
-                    >
+                  {ebooks.map(ebook => <div key={ebook.id} onClick={() => setSelectedEbook(ebook)} className="flex-shrink-0 w-40 cursor-pointer group">
                       <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
-                        {ebook.cover_image ? (
-                          <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                        {ebook.cover_image ? <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
                             <BookOpen className="h-12 w-12 text-white" />
-                          </div>
-                        )}
+                          </div>}
                       </div>
                       <h4 className="font-semibold text-sm line-clamp-1">
                         {stripHtml(ebook.title)}
@@ -371,8 +345,7 @@ const Dashboard = () => {
                           {ebook.downloads}
                         </span>
                       </div>
-                    </div>
-                  ))}
+                    </div>)}
               </div>
             </div>}
         </div>
@@ -386,15 +359,9 @@ const Dashboard = () => {
             </Button>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {["Romance", "Thriller", "Inspiração", "Ficção Científica", "Mistério", "Fantasia", "Biografia", "Autoajuda"].map(genre => (
-              <Card 
-                key={genre} 
-                className="flex-shrink-0 w-36 p-6 hover:shadow-card transition-shadow cursor-pointer bg-gradient-secondary"
-                onClick={() => navigate(`/discover?genre=${genre}`)}
-              >
+            {["Romance", "Thriller", "Inspiração", "Ficção Científica", "Mistério", "Fantasia", "Biografia", "Autoajuda"].map(genre => <Card key={genre} className="flex-shrink-0 w-36 p-6 hover:shadow-card transition-shadow cursor-pointer bg-gradient-secondary" onClick={() => navigate(`/discover?genre=${genre}`)}>
                 <h4 className="font-semibold text-white text-center">{genre}</h4>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
 
@@ -415,15 +382,9 @@ const Dashboard = () => {
       <Dialog open={!!selectedEbook} onOpenChange={() => setSelectedEbook(null)}>
         <DialogContent className="sm:max-w-[500px]">
           <div className="space-y-4">
-            {selectedEbook?.cover_image && (
-              <div className="flex justify-center">
-                <img 
-                  src={selectedEbook.cover_image} 
-                  alt={selectedEbook.title}
-                  className="w-48 h-auto rounded-lg border shadow-sm"
-                />
-              </div>
-            )}
+            {selectedEbook?.cover_image && <div className="flex justify-center">
+                <img src={selectedEbook.cover_image} alt={selectedEbook.title} className="w-48 h-auto rounded-lg border shadow-sm" />
+              </div>}
             
             <div className="space-y-3">
               <h2 className="text-lg font-semibold leading-none tracking-tight">
@@ -438,14 +399,11 @@ const Dashboard = () => {
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Criado em</p>
                 <p className="font-medium">
-                  {selectedEbook?.created_at 
-                    ? new Date(selectedEbook.created_at).toLocaleDateString('pt-PT', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                      })
-                    : '-'
-                  }
+                  {selectedEbook?.created_at ? new Date(selectedEbook.created_at).toLocaleDateString('pt-PT', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                }) : '-'}
                 </p>
               </div>
               <div className="space-y-1">
@@ -462,10 +420,7 @@ const Dashboard = () => {
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Preço</p>
                 <p className="font-medium">
-                  {selectedEbook?.price && selectedEbook.price > 0 
-                    ? `${selectedEbook.price} MZN` 
-                    : 'Grátis'
-                  }
+                  {selectedEbook?.price && selectedEbook.price > 0 ? `${selectedEbook.price} MZN` : 'Grátis'}
                 </p>
               </div>
             </div>
@@ -489,30 +444,19 @@ const Dashboard = () => {
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="destructive"
-              onClick={handleDeleteEbook}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
               <Trash2 className="mr-2 h-4 w-4" />
               Apagar
             </Button>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                onClick={handleDownloadEbook}
-                className="flex-1 sm:flex-none"
-              >
+              <Button variant="outline" onClick={handleDownloadEbook} className="flex-1 sm:flex-none">
                 <Download className="mr-2 h-4 w-4" />
                 Download
               </Button>
-              <Button
-                onClick={() => {
-                  navigate(`/editor?id=${selectedEbook?.id}`);
-                  setSelectedEbook(null);
-                }}
-                className="flex-1 sm:flex-none"
-              >
+              <Button onClick={() => {
+              navigate(`/editor?id=${selectedEbook?.id}`);
+              setSelectedEbook(null);
+            }} className="flex-1 sm:flex-none">
                 <Edit className="mr-2 h-4 w-4" />
                 Editar
               </Button>
