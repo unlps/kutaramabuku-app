@@ -3,8 +3,7 @@ import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, SlidersHorizontal, User } from "lucide-react";
-import logo from "@/assets/logo.png";
-import logoDark from "@/assets/logo-dark.png";
+import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { BookCard } from "@/components/BookCard";
 import { Button } from "@/components/ui/button";
@@ -210,7 +209,7 @@ const Discover = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <img src={theme === "dark" ? logoDark : logo} alt="Kutara Mabuku" className="w-10 h-10" />
+              <img src={logo} alt="Kutara Mabuku" className="w-10 h-10" />
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Kutara Mabuku
               </h1>
