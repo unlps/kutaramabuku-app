@@ -61,7 +61,7 @@ const Index = () => {
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Hero Image */}
       <div className="relative w-full h-[45vh] overflow-hidden">
-        <img src={heroImage} alt="Book covers collection" className="absolute inset-0 w-full h-full object-cover animate-pan-vertical" />
+        <img src={heroImage} alt="Book covers collection" className="absolute inset-x-0 top-0 w-full h-[130%] object-cover animate-pan-vertical" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 

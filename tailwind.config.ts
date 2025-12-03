@@ -84,10 +84,10 @@ export default {
         },
         "pan-vertical": {
           "0%, 100%": {
-            objectPosition: "center 30%",
+            transform: "translateY(0%)",
           },
           "50%": {
-            objectPosition: "center 70%",
+            transform: "translateY(-15%)",
           },
         },
       },
