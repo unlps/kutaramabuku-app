@@ -340,7 +340,7 @@ const Dashboard = () => {
                 Criar Ebook
               </Button>
             </Card> : <div>
-              <div className="flex gap-4 overflow-x-auto pb-4">
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                   {ebooks.map(ebook => (
                     <div
                       key={ebook.id}
@@ -386,32 +386,16 @@ const Dashboard = () => {
               Ver todos <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
-          <div>
-            <Carousel setApi={setGenresCarouselApi} className="w-full max-w-full">
-              <CarouselContent className="-ml-2 md:-ml-3">
-                {["Romance", "Thriller", "Inspiração", "Ficção Científica", "Mistério"].map(genre => <CarouselItem key={genre} className="pl-2 md:pl-3 basis-[45%] md:basis-1/3 lg:basis-1/4">
-                    <Card className="p-6 hover:shadow-card transition-shadow cursor-pointer bg-gradient-secondary">
-                      <h4 className="font-semibold text-white text-center">{genre}</h4>
-                    </Card>
-                  </CarouselItem>)}
-              </CarouselContent>
-            </Carousel>
-            <div className="flex justify-center gap-2 mt-4">
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => genresCarouselApi?.scrollPrev()}
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {["Romance", "Thriller", "Inspiração", "Ficção Científica", "Mistério", "Fantasia", "Biografia", "Autoajuda"].map(genre => (
+              <Card 
+                key={genre} 
+                className="flex-shrink-0 w-36 p-6 hover:shadow-card transition-shadow cursor-pointer bg-gradient-secondary"
+                onClick={() => navigate(`/discover?genre=${genre}`)}
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => genresCarouselApi?.scrollNext()}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+                <h4 className="font-semibold text-white text-center">{genre}</h4>
+              </Card>
+            ))}
           </div>
         </div>
 
