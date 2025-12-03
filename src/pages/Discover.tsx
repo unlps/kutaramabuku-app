@@ -12,6 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BookCardSkeleton } from "@/components/BookCardSkeleton";
 interface Genre {
   id: string;
   name: string;
@@ -282,12 +283,8 @@ const Discover = () => {
               <span>{filteredBooks.length === 1 ? "livro encontrado" : "livros encontrados"}</span>
             </div>
 
-            {loading ? <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {[...Array(10)].map((_, i) => <div key={i} className="space-y-3">
-                    <Skeleton className="aspect-[3/4] w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>)}
+            {loading ? <div className="flex flex-wrap gap-4 justify-start">
+                {[...Array(10)].map((_, i) => <BookCardSkeleton key={i} />)}
               </div> : filteredBooks.length === 0 ? <div className="flex flex-col items-center justify-center min-h-[40vh]">
                 <Search className="h-16 w-16 text-muted-foreground mb-4" />
                 <h2 className="text-xl font-bold mb-2">Nenhum livro encontrado</h2>
