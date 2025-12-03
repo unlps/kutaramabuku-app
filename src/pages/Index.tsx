@@ -2,8 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import library1 from "@/assets/library-1.png";
-import library2 from "@/assets/library-2.png";
+import heroBooks from "@/assets/hero-books.png";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,12 +11,11 @@ import { stripHtml } from "@/lib/utils";
 const Index = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [currentImage, setCurrentImage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [featuredBooks, setFeaturedBooks] = useState<any[]>([]);
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [showBookDialog, setShowBookDialog] = useState(false);
-  const heroImages = [library1, library2];
+  const heroImage = heroBooks;
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
@@ -44,12 +42,6 @@ const Index = () => {
     return () => clearInterval(timer);
   }, [messages.length]);
   useEffect(() => {
-    const imageTimer = setInterval(() => {
-      setCurrentImage(prev => (prev + 1) % heroImages.length);
-    }, 5000);
-    return () => clearInterval(imageTimer);
-  }, [heroImages.length]);
-  useEffect(() => {
     fetchFeaturedBooks();
   }, []);
   const fetchFeaturedBooks = async () => {
@@ -67,9 +59,9 @@ const Index = () => {
     setShowBookDialog(true);
   };
   return <div className="min-h-screen bg-background flex flex-col">
-      {/* Hero Image Slider */}
+      {/* Hero Image */}
       <div className="relative w-full h-[45vh] overflow-hidden">
-        {heroImages.map((image, index) => <img key={index} src={image} alt={`Library scene ${index + 1}`} className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === currentImage ? 'opacity-100' : 'opacity-0'}`} />)}
+        <img src={heroImage} alt="Book covers collection" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
