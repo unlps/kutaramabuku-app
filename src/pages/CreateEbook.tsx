@@ -14,6 +14,15 @@ import { ArrowLeft, BookOpen, Upload, Sparkles, Type, Image, Minus, FileText, Ar
 import logo from "@/assets/logo-new.png";
 import { EBOOK_TEMPLATES } from "@/components/templates/ebooks";
 import { ebookSchema, chapterSchema } from "@/lib/validations";
+import AuthorInput from "@/components/AuthorInput";
+
+interface Author {
+  id: string;
+  name: string;
+  userId?: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+  isNew?: boolean;
+}
 type WizardStep = "origin" | "upload" | "mapping" | "metadata" | "template" | "complete";
 type OriginType = "blank" | "import";
 interface ParsedChapter {
@@ -27,7 +36,7 @@ const CreateEbook = () => {
   const [origin, setOrigin] = useState<OriginType | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
+  const [authors, setAuthors] = useState<Author[]>([]);
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +92,7 @@ const CreateEbook = () => {
         data: profile
       } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
       if (profile?.full_name) {
-        setAuthor(profile.full_name);
+        setAuthors([{ id: crypto.randomUUID(), name: profile.full_name }]);
       }
     }
   };
@@ -98,10 +107,11 @@ const CreateEbook = () => {
     }
 
     // Validate ebook metadata
+    const authorNames = authors.map(a => a.name).join(', ');
     const validationResult = ebookSchema.safeParse({
       title,
       description,
-      author
+      author: authorNames
     });
     if (!validationResult.success) {
       const firstError = validationResult.error.errors[0];
@@ -164,7 +174,7 @@ const CreateEbook = () => {
         user_id: session.user.id,
         title,
         description,
-        author,
+        author: authors.map(a => a.name).join(', '),
         type: "standard",
         template_id: selectedTemplate,
         cover_image: coverImageUrl,
@@ -187,9 +197,43 @@ const CreateEbook = () => {
         } = await supabase.from("chapters").insert(chaptersToInsert);
         if (chaptersError) throw chaptersError;
       }
+
+      // Create book_authors entries and notifications for collaborators
+      for (const author of authors) {
+        if (author.userId) {
+          // Add to book_authors table
+          const { data: bookAuthor, error: bookAuthorError } = await supabase
+            .from("book_authors")
+            .insert({
+              ebook_id: ebook.id,
+              user_id: author.userId,
+              status: 'pending'
+            })
+            .select()
+            .single();
+
+          if (!bookAuthorError && bookAuthor) {
+            // Create notification for the author
+            await supabase.from("notifications").insert({
+              user_id: author.userId,
+              type: 'collaboration_request',
+              title: 'Convite de Colaboração',
+              message: `Você foi adicionado como autor do livro "${title}". Aceite ou rejeite o convite.`,
+              data: { 
+                ebook_id: ebook.id, 
+                book_author_id: bookAuthor.id,
+                ebook_title: title 
+              }
+            });
+          }
+        }
+      }
+
       toast({
         title: "Ebook criado!",
-        description: "Redirecionando para o editor..."
+        description: authors.some(a => a.userId) 
+          ? "Convites de colaboração enviados. Redirecionando para o editor..."
+          : "Redirecionando para o editor..."
       });
 
       // Redirect to editor
@@ -482,8 +526,11 @@ const CreateEbook = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="author">Autor</Label>
-                  <Input id="author" placeholder="Nome do autor" value={author} onChange={e => setAuthor(e.target.value)} />
+                  <Label htmlFor="author">Autores</Label>
+                  <AuthorInput
+                    initialAuthors={authors}
+                    onChange={(newAuthors) => setAuthors(newAuthors)}
+                  />
                 </div>
 
                 <div className="space-y-2">

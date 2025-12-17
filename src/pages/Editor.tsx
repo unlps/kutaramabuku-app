@@ -17,6 +17,7 @@ import { ArrowLeft, Save, Eye, Download, Plus, Trash2, FileText, Upload, X } fro
 import jsPDF from "jspdf";
 import { sanitizeHtml } from "@/lib/utils";
 import { ebookSchema, chapterSchema } from "@/lib/validations";
+import AuthorInput from "@/components/AuthorInput";
 interface Chapter {
   id?: string;
   title: string;
@@ -594,11 +595,18 @@ export default function Editor() {
                     })} placeholder="Descrição do ebook" className="w-full min-h-[200px]" />
                       </div>
                       <div>
-                        <label className="text-sm font-medium mb-2 block">Autor</label>
-                        <Input value={ebook.author || ""} onChange={e => setEbook({
-                      ...ebook,
-                      author: e.target.value
-                    })} placeholder="Nome do autor" />
+                        <label className="text-sm font-medium mb-2 block">Autores</label>
+                        <AuthorInput
+                          ebookId={ebook.id}
+                          onChange={(authors) => {
+                            // Update the primary author name for display
+                            const primaryAuthor = authors.find(a => a.status === 'accepted' || !a.userId) || authors[0];
+                            setEbook({
+                              ...ebook,
+                              author: authors.map(a => a.name).join(', ')
+                            });
+                          }}
+                        />
                       </div>
 
                       <div className="space-y-2">
