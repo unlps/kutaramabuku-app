@@ -465,6 +465,20 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Visibilidade</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedEbook?.is_public ? "Livro visível para todos no Discover" : "Livro privado, apenas você pode ver"}
+                  </p>
+                </div>
+                <div className={`w-12 h-6 rounded-full flex items-center px-1 ${selectedEbook?.is_public ? 'bg-primary justify-end' : 'bg-muted justify-start'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full" />
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
