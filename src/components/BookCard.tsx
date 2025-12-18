@@ -49,7 +49,7 @@ export const BookCard = ({
     <HoverCard openDelay={200}>
       <HoverCardTrigger asChild>
         <div
-          className="cursor-pointer group w-44 flex-shrink-0 bg-card rounded-xl shadow-md border border-border overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300"
+          className="cursor-pointer group w-44 flex-shrink-0 bg-card rounded-xl shadow-md border border-border overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col"
           onClick={() => navigate(`/book/${id}`)}
         >
           {/* Cover Image */}
@@ -72,10 +72,10 @@ export const BookCard = ({
           </div>
           
           {/* Content */}
-          <div className="p-3 space-y-1.5">
+          <div className="p-3 flex flex-col flex-1">
             <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{stripHtml(title)}</h3>
-            <p className="text-xs text-muted-foreground line-clamp-1">{author}</p>
-            <div className="flex items-center justify-between pt-1">
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{author}</p>
+            <div className="flex items-center justify-between mt-auto pt-2">
               {genre && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
                   {genre}
