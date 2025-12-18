@@ -92,7 +92,13 @@ const CreateEbook = () => {
         data: profile
       } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
       if (profile?.full_name) {
-        setAuthors([{ id: crypto.randomUUID(), name: profile.full_name }]);
+        // Add current user as author with their userId for proper tracking
+        setAuthors([{ 
+          id: crypto.randomUUID(), 
+          name: profile.full_name,
+          userId: session.user.id,
+          status: 'accepted'
+        }]);
       }
     }
   };
@@ -201,19 +207,22 @@ const CreateEbook = () => {
       // Create book_authors entries and notifications for collaborators
       for (const author of authors) {
         if (author.userId) {
-          // Add to book_authors table
+          const isCurrentUser = author.userId === session.user.id;
+          
+          // Add to book_authors table - if current user, auto-accept and mark as primary
           const { data: bookAuthor, error: bookAuthorError } = await supabase
             .from("book_authors")
             .insert({
               ebook_id: ebook.id,
               user_id: author.userId,
-              status: 'pending'
+              status: isCurrentUser ? 'accepted' : 'pending',
+              is_primary: isCurrentUser
             })
             .select()
             .single();
 
-          if (!bookAuthorError && bookAuthor) {
-            // Create notification for the author
+          // Only create notification for other users, not for self
+          if (!bookAuthorError && bookAuthor && !isCurrentUser) {
             await supabase.from("notifications").insert({
               user_id: author.userId,
               type: 'collaboration_request',
