@@ -291,7 +291,7 @@ const Discover = () => {
                 <p className="text-muted-foreground text-center">
                   Tente ajustar os filtros ou pesquisa
                 </p>
-              </div> : <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              </div> : <div className="flex flex-wrap gap-4 justify-start">
                 {filteredBooks.map(book => <BookCard key={book.id} id={book.id} title={book.title} author={book.author || "Autor Desconhecido"} coverImage={book.cover_image} description={book.description} genre={book.genre} price={book.price} downloads={book.downloads} pages={book.pages} formats={book.formats} publishedAt={book.published_at} rating={book.rating} />)}
               </div>}
           </>}
