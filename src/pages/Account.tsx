@@ -464,7 +464,7 @@ const Account = () => {
                     setShowBookDialog(true);
                   }}
                 >
-                  <div className="aspect-[3/4] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                  <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
                     {book.cover_image ? (
                       <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
                     ) : (
@@ -508,7 +508,7 @@ const Account = () => {
                     setShowBookDialog(true);
                   }}
                 >
-                  <div className="aspect-[3/4] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                  <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
                     {book.cover_image ? (
                       <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
                     ) : (
@@ -554,7 +554,7 @@ const Account = () => {
                         setShowBookDialog(true);
                       }}
                     >
-                      <div className="aspect-[3/4] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                      <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
                         {book.cover_image ? (
                           <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
                         ) : (
