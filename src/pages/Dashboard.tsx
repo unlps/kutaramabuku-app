@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, BookOpen, Eye, Download, MessageSquare, Sparkles, ChevronRight, Trash2, Edit, ChevronLeft, Globe, Lock } from "lucide-react";
+import { Plus, BookOpen, Eye, Download, MessageSquare, Sparkles, ChevronRight, Trash2, Edit, ChevronLeft } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
@@ -29,7 +29,6 @@ interface Ebook {
   author: string | null;
   genre: string | null;
   price: number;
-  is_public: boolean | null;
 }
 interface Template {
   id: string;
@@ -324,52 +323,29 @@ const Dashboard = () => {
               </Button>
             </Card> : <div>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {ebooks.map(ebook => (
-                    <Card 
-                      key={ebook.id}
-                      className="flex-shrink-0 w-40 p-3 hover:shadow-card transition-shadow cursor-pointer"
-                      onClick={() => setSelectedEbook(ebook)}
-                    >
-                      <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                        {ebook.cover_image ? (
-                          <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <BookOpen className="h-12 w-12 text-white" />
-                        )}
+                  {ebooks.map(ebook => <div key={ebook.id} onClick={() => setSelectedEbook(ebook)} className="flex-shrink-0 w-40 cursor-pointer group">
+                      <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
+                        {ebook.cover_image ? <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                            <BookOpen className="h-12 w-12 text-white" />
+                          </div>}
                       </div>
-                      <h4 className="font-semibold mb-1 text-sm line-clamp-1">
+                      <h4 className="font-semibold text-sm line-clamp-1">
                         {stripHtml(ebook.title)}
                       </h4>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                      <p className="text-xs text-muted-foreground line-clamp-1 border">
                         {stripHtml(ebook.description || "Sem descrição")}
                       </p>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                         <span className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
-                          {ebook.views || 0}
+                          {ebook.views}
                         </span>
                         <span className="flex items-center gap-1">
                           <Download className="h-3 w-3" />
-                          {ebook.downloads || 0}
+                          {ebook.downloads}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="flex items-center gap-1 text-xs">
-                          {ebook.is_public ? (
-                            <>
-                              <Globe className="h-3 w-3 text-green-600" />
-                              <span className="text-green-600">Público</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="h-3 w-3 text-orange-600" />
-                              <span className="text-orange-600">Privado</span>
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    </Card>
-                  ))}
+                    </div>)}
               </div>
             </div>}
         </div>
