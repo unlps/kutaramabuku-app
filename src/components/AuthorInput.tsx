@@ -41,9 +41,19 @@ export default function AuthorInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
   // Load existing book authors if ebookId is provided
   useEffect(() => {
@@ -153,51 +163,57 @@ export default function AuthorInput({
     }
 
     setLoading(true);
+    const isCurrentUser = profile.id === currentUserId;
+    
     try {
       // If we have an ebookId, save to database and create notification
       if (ebookId) {
-        // Add to book_authors table
+        // Add to book_authors table - if current user, auto-accept and mark as primary
         const { data: bookAuthor, error: insertError } = await supabase
           .from("book_authors")
           .insert({
             ebook_id: ebookId,
             user_id: profile.id,
-            status: 'pending'
+            status: isCurrentUser ? 'accepted' : 'pending',
+            is_primary: isCurrentUser
           })
           .select()
           .single();
 
         if (insertError) throw insertError;
 
-        // Get ebook title for notification
-        const { data: ebook } = await supabase
-          .from("ebooks")
-          .select("title")
-          .eq("id", ebookId)
-          .single();
+        // Only create notification for other users, not for self
+        if (!isCurrentUser) {
+          // Get ebook title for notification
+          const { data: ebook } = await supabase
+            .from("ebooks")
+            .select("title")
+            .eq("id", ebookId)
+            .single();
 
-        // Create notification for the author
-        const { error: notifError } = await supabase
-          .from("notifications")
-          .insert({
-            user_id: profile.id,
-            type: 'collaboration_request',
-            title: 'Convite de Colaboração',
-            message: `Você foi adicionado como autor do livro "${ebook?.title || 'Sem título'}". Aceite ou rejeite o convite.`,
-            data: { 
-              ebook_id: ebookId, 
-              book_author_id: bookAuthor.id,
-              ebook_title: ebook?.title 
-            }
-          });
+          // Create notification for the author
+          const { error: notifError } = await supabase
+            .from("notifications")
+            .insert({
+              user_id: profile.id,
+              type: 'collaboration_request',
+              title: 'Convite de Colaboração',
+              message: `Você foi adicionado como autor do livro "${ebook?.title || 'Sem título'}". Aceite ou rejeite o convite.`,
+              data: { 
+                ebook_id: ebookId, 
+                book_author_id: bookAuthor.id,
+                ebook_title: ebook?.title 
+              }
+            });
 
-        if (notifError) console.error("Error creating notification:", notifError);
+          if (notifError) console.error("Error creating notification:", notifError);
+        }
 
         const newAuthor: Author = {
           id: bookAuthor.id,
           name,
           userId: profile.id,
-          status: 'pending'
+          status: isCurrentUser ? 'accepted' : 'pending'
         };
 
         const updatedAuthors = [...authors, newAuthor];
@@ -206,7 +222,9 @@ export default function AuthorInput({
 
         toast({
           title: "Autor adicionado",
-          description: `${name} foi convidado como colaborador.`
+          description: isCurrentUser 
+            ? `${name} foi adicionado como autor principal.`
+            : `${name} foi convidado como colaborador.`
         });
       } else {
         // Just add to local state for CreateEbook flow
@@ -214,7 +232,8 @@ export default function AuthorInput({
           id: crypto.randomUUID(),
           name,
           userId: profile.id,
-          status: 'pending'
+          status: isCurrentUser ? 'accepted' : 'pending',
+          isNew: false
         };
 
         const updatedAuthors = [...authors, newAuthor];
