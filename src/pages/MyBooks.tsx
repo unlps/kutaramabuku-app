@@ -25,6 +25,8 @@ interface Ebook {
   created_at: string;
   author: string | null;
   is_public: boolean;
+  genre: string | null;
+  price: number | null;
 }
 
 const MyBooks = () => {
@@ -320,6 +322,19 @@ const MyBooks = () => {
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Páginas</p>
                 <p className="font-medium">{selectedEbook?.pages || 0}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Gênero</p>
+                <p className="font-medium">{selectedEbook?.genre || 'Não definido'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Preço</p>
+                <p className="font-medium">
+                  {selectedEbook?.price && selectedEbook.price > 0 ? `${selectedEbook.price} MZN` : 'Grátis'}
+                </p>
               </div>
             </div>
 
