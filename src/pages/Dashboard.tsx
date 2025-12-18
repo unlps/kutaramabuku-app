@@ -474,9 +474,33 @@ const Dashboard = () => {
                     {selectedEbook?.is_public ? "Livro visível para todos no Discover" : "Livro privado, apenas você pode ver"}
                   </p>
                 </div>
-                <div className={`w-12 h-6 rounded-full flex items-center px-1 ${selectedEbook?.is_public ? 'bg-primary justify-end' : 'bg-muted justify-start'}`}>
-                  <div className="w-4 h-4 bg-white rounded-full" />
-                </div>
+                <button
+                  onClick={async () => {
+                    if (!selectedEbook) return;
+                    const newValue = !selectedEbook.is_public;
+                    const { error } = await supabase
+                      .from("ebooks")
+                      .update({ is_public: newValue })
+                      .eq("id", selectedEbook.id);
+                    if (error) {
+                      toast({
+                        title: "Erro",
+                        description: "Não foi possível alterar a visibilidade",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setSelectedEbook({ ...selectedEbook, is_public: newValue });
+                    fetchData();
+                    toast({
+                      title: "Visibilidade alterada",
+                      description: newValue ? "O livro agora está público" : "O livro agora está privado"
+                    });
+                  }}
+                  className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors cursor-pointer ${selectedEbook?.is_public ? 'bg-primary justify-end' : 'bg-muted justify-start'}`}
+                >
+                  <div className="w-4 h-4 bg-white rounded-full shadow-sm" />
+                </button>
               </div>
             </div>
           </div>
