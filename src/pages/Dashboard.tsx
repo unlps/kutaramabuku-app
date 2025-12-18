@@ -327,7 +327,7 @@ const Dashboard = () => {
                   {ebooks.map(ebook => (
                     <Card 
                       key={ebook.id}
-                      className="flex-shrink-0 w-40 p-3 hover:shadow-card transition-shadow cursor-pointer"
+                      className="flex-shrink-0 w-40 p-3 hover:shadow-card transition-shadow cursor-pointer border"
                       onClick={() => setSelectedEbook(ebook)}
                     >
                       <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden">
