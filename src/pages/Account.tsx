@@ -403,19 +403,30 @@ const Account = () => {
               <BookOpen className="h-5 w-5" />
               Livros Públicos ({publicBooks.length})
             </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {publicBooks.map(book => <div key={book.id} onClick={() => {
-            setSelectedBook(book);
-            setShowBookDialog(true);
-          }} className="flex-shrink-0 w-40 cursor-pointer group">
-                  <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
-                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                        <BookOpen className="h-12 w-12 text-white" />
-                      </div>}
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {publicBooks.map(book => (
+                <Card 
+                  key={book.id}
+                  className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border"
+                  onClick={() => {
+                    setSelectedBook(book);
+                    setShowBookDialog(true);
+                  }}
+                >
+                  <div className="aspect-[3/4] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                    {book.cover_image ? (
+                      <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="h-12 w-12 text-white" />
+                    )}
                   </div>
-                  <p className="text-sm font-medium truncate">{stripHtml(book.title)}</p>
-                  <p className="text-xs text-muted-foreground truncate">{book.author || "Autor Desconhecido"}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">
+                    {stripHtml(book.title)}
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                    {book.author || "Autor Desconhecido"}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {book.views || 0}
@@ -425,7 +436,8 @@ const Account = () => {
                       {book.downloads || 0}
                     </span>
                   </div>
-                </div>)}
+                </Card>
+              ))}
             </div>
           </div>}
 
@@ -435,19 +447,30 @@ const Account = () => {
               <BookOpen className="h-5 w-5" />
               Livros Privados ({privateBooks.length})
             </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {privateBooks.map(book => <div key={book.id} onClick={() => {
-            setSelectedBook(book);
-            setShowBookDialog(true);
-          }} className="flex-shrink-0 w-40 cursor-pointer group">
-                  <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
-                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                        <BookOpen className="h-12 w-12 text-white" />
-                      </div>}
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {privateBooks.map(book => (
+                <Card 
+                  key={book.id}
+                  className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border"
+                  onClick={() => {
+                    setSelectedBook(book);
+                    setShowBookDialog(true);
+                  }}
+                >
+                  <div className="aspect-[3/4] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                    {book.cover_image ? (
+                      <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="h-12 w-12 text-white" />
+                    )}
                   </div>
-                  <p className="text-sm font-medium truncate">{stripHtml(book.title)}</p>
-                  <p className="text-xs text-muted-foreground truncate">{book.author || "Autor Desconhecido"}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">
+                    {stripHtml(book.title)}
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                    {book.author || "Autor Desconhecido"}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {book.views || 0}
@@ -457,7 +480,8 @@ const Account = () => {
                       {book.downloads || 0}
                     </span>
                   </div>
-                </div>)}
+                </Card>
+              ))}
             </div>
           </div>}
 
@@ -467,19 +491,30 @@ const Account = () => {
               <Heart className="h-5 w-5" />
               Lista de Desejos ({wishlist.length})
             </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {wishlist.map(book => <div key={book.id} onClick={() => {
-            setSelectedBook(book);
-            setShowBookDialog(true);
-          }} className="flex-shrink-0 w-40 cursor-pointer group">
-                  <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden border-2 border-border group-hover:border-primary transition-colors">
-                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                        <BookOpen className="h-12 w-12 text-white" />
-                      </div>}
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {wishlist.map(book => book && (
+                <Card 
+                  key={book.id}
+                  className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border"
+                  onClick={() => {
+                    setSelectedBook(book);
+                    setShowBookDialog(true);
+                  }}
+                >
+                  <div className="aspect-[3/4] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                    {book.cover_image ? (
+                      <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="h-12 w-12 text-white" />
+                    )}
                   </div>
-                  <p className="text-sm font-medium truncate">{stripHtml(book.title)}</p>
-                  <p className="text-xs text-muted-foreground truncate">{book.author || "Autor Desconhecido"}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">
+                    {stripHtml(book.title)}
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                    {book.author || "Autor Desconhecido"}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {book.views || 0}
@@ -489,7 +524,8 @@ const Account = () => {
                       {book.downloads || 0}
                     </span>
                   </div>
-                </div>)}
+                </Card>
+              ))}
             </div>
           </div>}
       </main>
