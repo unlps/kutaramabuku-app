@@ -324,40 +324,52 @@ const Dashboard = () => {
               </Button>
             </Card> : <div>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {ebooks.map(ebook => <div key={ebook.id} onClick={() => setSelectedEbook(ebook)} className="flex-shrink-0 w-72 cursor-pointer group">
-                      <Card className="overflow-hidden rounded-xl shadow-md group-hover:shadow-lg transition-all bg-card">
-                        <div className="aspect-[3/4] bg-muted overflow-hidden rounded-t-xl">
-                          {ebook.cover_image ? <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                              <BookOpen className="h-16 w-16 text-white" />
-                            </div>}
-                        </div>
-                        <div className="p-4 space-y-2">
-                          <h4 className="font-bold text-base line-clamp-1">
-                            {stripHtml(ebook.title)}
-                          </h4>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {stripHtml(ebook.description || "Sem descrição")}
-                          </p>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground pt-1">
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-4 w-4" />
-                              {ebook.views || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Download className="h-4 w-4" />
-                              {ebook.downloads || 0}
-                            </span>
-                          </div>
-                          <div className={`flex items-center gap-1.5 text-sm font-medium pt-1 ${ebook.is_public ? 'text-primary' : 'text-amber-500'}`}>
-                            {ebook.is_public ? (
-                              <><Globe className="h-4 w-4" /> Público</>
-                            ) : (
-                              <><Lock className="h-4 w-4" /> Privado</>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    </div>)}
+                  {ebooks.map(ebook => (
+                    <Card 
+                      key={ebook.id}
+                      className="flex-shrink-0 w-40 p-3 hover:shadow-card transition-shadow cursor-pointer"
+                      onClick={() => setSelectedEbook(ebook)}
+                    >
+                      <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                        {ebook.cover_image ? (
+                          <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <BookOpen className="h-12 w-12 text-white" />
+                        )}
+                      </div>
+                      <h4 className="font-semibold mb-1 text-sm line-clamp-1">
+                        {stripHtml(ebook.title)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                        {stripHtml(ebook.description || "Sem descrição")}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {ebook.views || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Download className="h-3 w-3" />
+                          {ebook.downloads || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="flex items-center gap-1 text-xs">
+                          {ebook.is_public ? (
+                            <>
+                              <Globe className="h-3 w-3 text-green-600" />
+                              <span className="text-green-600">Público</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3 w-3 text-orange-600" />
+                              <span className="text-orange-600">Privado</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </Card>
+                  ))}
               </div>
             </div>}
         </div>
