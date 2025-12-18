@@ -72,7 +72,7 @@ export const BookCard = ({
           </div>
           
           {/* Content */}
-          <div className="p-3 flex flex-col flex-1">
+          <div className="p-3 flex flex-col flex-1 border-t border-border">
             <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{stripHtml(title)}</h3>
             <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{author}</p>
             <div className="flex items-center justify-between mt-auto pt-2">
