@@ -5,13 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Eye, Download, ArrowLeft, Trash2, Edit, Globe, Lock } from "lucide-react";
+import { BookOpen, Eye, Download, ArrowLeft, Trash2, Edit, Globe, Lock, FileText, Calendar } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import { stripHtml } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 interface Ebook {
   id: string;
   title: string;
@@ -24,7 +28,18 @@ interface Ebook {
   created_at: string;
   author: string | null;
   is_public: boolean;
+  genre: string | null;
+  price: number | null;
+  formats: string[] | null;
+  published_at: string | null;
+  rating: number | null;
 }
+
+const truncateText = (text: string, maxLength: number) => {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + "...";
+};
+
 const MyBooks = () => {
   const [ebooks, setEbooks] = useState<Ebook[]>([]);
   const [selectedEbook, setSelectedEbook] = useState<Ebook | null>(null);
@@ -239,39 +254,111 @@ const MyBooks = () => {
             <Button onClick={() => navigate("/create")}>
               Criar Ebook
             </Button>
-          </Card> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {ebooks.map(ebook => <Card key={ebook.id} className="p-3 hover:shadow-card transition-shadow cursor-pointer" onClick={() => setSelectedEbook(ebook)}>
-                <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                  {ebook.cover_image ? <img src={ebook.cover_image} alt={ebook.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-                </div>
-                <h4 className="font-semibold mb-1 text-sm line-clamp-1">
-                  {stripHtml(ebook.title)}
-                </h4>
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                  {stripHtml(ebook.description || "Sem descrição")}
-                </p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    {ebook.views}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Download className="h-3 w-3" />
-                    {ebook.downloads}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <span className="flex items-center gap-1 text-xs">
-                    {ebook.is_public ? <>
-                        <Globe className="h-3 w-3 text-green-600" />
-                        <span className="text-green-600">Público</span>
-                      </> : <>
-                        <Lock className="h-3 w-3 text-orange-600" />
-                        <span className="text-orange-600">Privado</span>
-                      </>}
-                  </span>
-                </div>
-              </Card>)}
+          </Card> : <div className="flex flex-wrap gap-4 justify-start">
+            {ebooks.map(ebook => (
+              <HoverCard key={ebook.id} openDelay={200}>
+                <HoverCardTrigger asChild>
+                  <div
+                    className="cursor-pointer group w-44 flex-shrink-0 bg-card rounded-xl shadow-md border border-border overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300"
+                    onClick={() => setSelectedEbook(ebook)}
+                  >
+                    {/* Cover Image */}
+                    <div className="aspect-[2/3] relative overflow-hidden bg-muted">
+                      {ebook.cover_image ? (
+                        <img
+                          src={ebook.cover_image}
+                          alt={ebook.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
+                          <FileText className="h-12 w-12 text-white" />
+                        </div>
+                      )}
+                      {ebook.price === 0 && (
+                        <Badge className="absolute top-2 right-2 bg-primary text-xs shadow-sm">Grátis</Badge>
+                      )}
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-3 space-y-1.5">
+                      <h3 className="font-semibold text-sm line-clamp-2 leading-tight">{stripHtml(ebook.title)}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{ebook.author || "Autor Desconhecido"}</p>
+                      <div className="flex items-center justify-between pt-1">
+                        {ebook.genre && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                            {ebook.genre}
+                          </Badge>
+                        )}
+                        {(ebook.rating || 0) > 0 && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-500 text-xs">★</span>
+                            <span className="text-xs font-medium">{(ebook.rating || 0).toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80" side="right">
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-bold text-lg mb-1">{stripHtml(ebook.title)}</h4>
+                      <p className="text-sm text-muted-foreground">{ebook.author || "Autor Desconhecido"}</p>
+                    </div>
+                    
+                    {ebook.description && (
+                      <p className="text-sm leading-relaxed">
+                        {truncateText(stripHtml(ebook.description), 150)}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {ebook.published_at && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>{format(new Date(ebook.published_at), "dd MMM yyyy", { locale: ptBR })}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2">
+                        <Download className="h-4 w-4 text-muted-foreground" />
+                        <span>{ebook.downloads} downloads</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>{ebook.pages} páginas</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        <span>{ebook.views} visualizações</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t flex items-center justify-between">
+                      <span className="font-bold text-lg text-primary">
+                        {ebook.price === 0 || !ebook.price ? "Grátis" : `${ebook.price.toFixed(2)} MZN`}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs">
+                        {ebook.is_public ? (
+                          <>
+                            <Globe className="h-3 w-3 text-green-600" />
+                            <span className="text-green-600">Público</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="h-3 w-3 text-orange-600" />
+                            <span className="text-orange-600">Privado</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            ))}
           </div>}
       </main>
 
