@@ -474,7 +474,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_system_notification: {
+        Args: {
+          p_data?: Json
+          p_message: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       ebook_type: "standard" | "interactive" | "professional"
