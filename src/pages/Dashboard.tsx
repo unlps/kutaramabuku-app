@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import { stripHtml } from "@/lib/utils";
 interface Profile {
   full_name: string;
-  email: string;
+  email?: string;
 }
 interface Ebook {
   id: string;

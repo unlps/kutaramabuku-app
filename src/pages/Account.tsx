@@ -17,7 +17,7 @@ import { stripHtml } from "@/lib/utils";
 interface Profile {
   id: string;
   full_name: string;
-  email: string;
+  email?: string; // Only available for own profile
   username?: string;
   bio?: string;
   avatar_url?: string;
@@ -74,12 +74,26 @@ const Account = () => {
     const profileId = userId || session.user.id;
     const isOwnProfile = profileId === session.user.id;
 
-    // Fetch profile
-    const {
-      data: profileData
-    } = await supabase.from("profiles").select("*").eq("id", profileId).single();
-    if (profileData) {
-      setProfile(profileData);
+    // Fetch profile - use base table for own profile (includes email), public view for others
+    if (isOwnProfile) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", profileId)
+        .single();
+      if (profileData) {
+        setProfile(profileData);
+      }
+    } else {
+      // Use the public view for other users' profiles (excludes email)
+      const { data: profileData } = await supabase
+        .from("profiles_public" as any)
+        .select("*")
+        .eq("id", profileId)
+        .single() as { data: Profile | null };
+      if (profileData) {
+        setProfile(profileData);
+      }
     }
 
     // Fetch stats
