@@ -102,9 +102,9 @@ const Discover = () => {
   const fetchProfiles = async () => {
     const {
       data
-    } = await supabase.from("profiles").select("id, full_name, username, avatar_url, bio").neq("id", currentUserId).order("full_name");
+    } = await supabase.from("profiles_public").select("id, full_name, username, avatar_url, bio").neq("id", currentUserId).order("full_name");
     if (data) {
-      setProfiles(data);
+      setProfiles(data as Profile[]);
     }
   };
   const applyProfileFilters = () => {
