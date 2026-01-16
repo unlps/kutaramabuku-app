@@ -12,8 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Camera } from "lucide-react";
+import { Camera, Lock, Globe } from "lucide-react";
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface EditProfileDialogProps {
     bio?: string;
     avatar_url?: string;
     social_link?: string;
+    is_private?: boolean;
   };
   onProfileUpdated: () => void;
 }
@@ -40,6 +42,7 @@ export const EditProfileDialog = ({
   const [username, setUsername] = useState(profile.username || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [socialLink, setSocialLink] = useState(profile.social_link || "");
+  const [isPrivate, setIsPrivate] = useState(profile.is_private || false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url || "");
 
@@ -98,6 +101,7 @@ export const EditProfileDialog = ({
           bio: bio || null,
           social_link: socialLink || null,
           avatar_url: avatarUrl,
+          is_private: isPrivate,
         })
         .eq("id", session.user.id);
 
@@ -206,6 +210,32 @@ export const EditProfileDialog = ({
               value={socialLink}
               onChange={(e) => setSocialLink(e.target.value)}
               placeholder="https://..."
+            />
+          </div>
+
+          {/* Private Account Toggle */}
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center gap-3">
+              {isPrivate ? (
+                <Lock className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <Globe className="h-5 w-5 text-muted-foreground" />
+              )}
+              <div>
+                <Label htmlFor="isPrivate" className="cursor-pointer">
+                  Conta Privada
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {isPrivate
+                    ? "Novos seguidores precisam ser aprovados"
+                    : "Qualquer pessoa pode seguir você"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="isPrivate"
+              checked={isPrivate}
+              onCheckedChange={setIsPrivate}
             />
           </div>
 

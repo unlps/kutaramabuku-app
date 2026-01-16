@@ -22,6 +22,7 @@ interface Profile {
   bio?: string;
   avatar_url?: string;
   social_link?: string;
+  is_private?: boolean;
 }
 interface Stats {
   booksCreated: number;
@@ -41,6 +42,7 @@ const Account = () => {
   const [privateBooks, setPrivateBooks] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followRequestPending, setFollowRequestPending] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -136,8 +138,19 @@ const Account = () => {
     if (!isOwnProfile) {
       const {
         data: followData
-      } = await supabase.from("user_follows").select("id").eq("follower_id", session.user.id).eq("following_id", profileId).single();
-      setIsFollowing(!!followData);
+      } = await supabase.from("user_follows").select("id, status").eq("follower_id", session.user.id).eq("following_id", profileId).single();
+      if (followData) {
+        if (followData.status === 'pending') {
+          setFollowRequestPending(true);
+          setIsFollowing(false);
+        } else {
+          setIsFollowing(true);
+          setFollowRequestPending(false);
+        }
+      } else {
+        setIsFollowing(false);
+        setFollowRequestPending(false);
+      }
     }
   };
   const handleLogout = async () => {
@@ -147,29 +160,59 @@ const Account = () => {
   const handleFollow = async () => {
     if (!currentUserId || !profile) return;
     try {
-      if (isFollowing) {
+      if (isFollowing || followRequestPending) {
+        // Unfollow or cancel request
         await supabase.from("user_follows").delete().eq("follower_id", currentUserId).eq("following_id", profile.id);
         setIsFollowing(false);
-        setStats(prev => ({
-          ...prev,
-          followers: prev.followers - 1
-        }));
+        setFollowRequestPending(false);
+        if (isFollowing) {
+          setStats(prev => ({
+            ...prev,
+            followers: prev.followers - 1
+          }));
+        }
         toast({
-          title: "Deixou de seguir"
+          title: isFollowing ? "Deixou de seguir" : "Pedido cancelado"
         });
       } else {
-        await supabase.from("user_follows").insert({
-          follower_id: currentUserId,
-          following_id: profile.id
-        });
-        setIsFollowing(true);
-        setStats(prev => ({
-          ...prev,
-          followers: prev.followers + 1
-        }));
-        toast({
-          title: "Seguindo"
-        });
+        // Check if target account is private
+        if (profile.is_private) {
+          // Create pending follow request
+          await supabase.from("user_follows").insert({
+            follower_id: currentUserId,
+            following_id: profile.id,
+            status: 'pending'
+          });
+          setFollowRequestPending(true);
+          
+          // Create notification for the target user
+          await supabase.rpc('create_system_notification', {
+            p_user_id: profile.id,
+            p_type: 'follow_request',
+            p_title: 'Pedido para seguir',
+            p_message: 'Alguém quer seguir você',
+            p_data: { follower_id: currentUserId }
+          });
+          
+          toast({
+            title: "Pedido para seguir enviado"
+          });
+        } else {
+          // Direct follow for public accounts
+          await supabase.from("user_follows").insert({
+            follower_id: currentUserId,
+            following_id: profile.id,
+            status: 'accepted'
+          });
+          setIsFollowing(true);
+          setStats(prev => ({
+            ...prev,
+            followers: prev.followers + 1
+          }));
+          toast({
+            title: "Seguindo"
+          });
+        }
       }
     } catch (error) {
       toast({
