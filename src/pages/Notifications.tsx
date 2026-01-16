@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, X, BookOpen, Users, Loader2 } from "lucide-react";
+import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
@@ -20,6 +20,7 @@ interface Notification {
     ebook_id?: string;
     book_author_id?: string;
     ebook_title?: string;
+    follower_id?: string;
   };
   is_read: boolean;
   created_at: string;
@@ -127,6 +128,63 @@ const Notifications = () => {
     }
   };
 
+  const handleFollowRequestResponse = async (notification: Notification, accept: boolean) => {
+    setProcessingId(notification.id);
+    
+    try {
+      const followerId = notification.data.follower_id;
+      
+      if (!followerId) {
+        throw new Error("ID do seguidor não encontrado");
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      if (accept) {
+        // Update the follow status to accepted
+        await supabase
+          .from("user_follows")
+          .update({ status: 'accepted' })
+          .eq("follower_id", followerId)
+          .eq("following_id", session.user.id);
+      } else {
+        // Delete the follow request
+        await supabase
+          .from("user_follows")
+          .delete()
+          .eq("follower_id", followerId)
+          .eq("following_id", session.user.id);
+      }
+
+      // Mark notification as read
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", notification.id);
+
+      // Update local state
+      setNotifications(prev => prev.map(n => 
+        n.id === notification.id ? { ...n, is_read: true } : n
+      ));
+
+      toast({
+        title: accept ? "Pedido aceito" : "Pedido rejeitado",
+        description: accept 
+          ? "O usuário agora pode ver seu conteúdo"
+          : "O pedido de seguir foi rejeitado."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao processar resposta",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const markAsRead = async (notificationId: string) => {
     try {
       await supabase
@@ -178,6 +236,8 @@ const Notifications = () => {
     switch (type) {
       case 'collaboration_request':
         return <Users className="h-5 w-5 text-primary" />;
+      case 'follow_request':
+        return <UserPlus className="h-5 w-5 text-primary" />;
       default:
         return <Bell className="h-5 w-5 text-primary" />;
     }
@@ -274,6 +334,35 @@ const Notifications = () => {
                       </div>
                     )}
 
+                    {/* Follow request actions */}
+                    {notification.type === 'follow_request' && !notification.is_read && (
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          size="sm"
+                          onClick={() => handleFollowRequestResponse(notification, true)}
+                          disabled={processingId === notification.id}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {processingId === notification.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Check className="h-4 w-4 mr-2" />
+                          )}
+                          Aceitar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleFollowRequestResponse(notification, false)}
+                          disabled={processingId === notification.id}
+                          className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Rejeitar
+                        </Button>
+                      </div>
+                    )}
+
                     {/* View book button for accepted collaborations */}
                     {notification.type === 'collaboration_request' && notification.is_read && notification.data.ebook_id && (
                       <Button
@@ -287,8 +376,21 @@ const Notifications = () => {
                       </Button>
                     )}
 
+                    {/* View profile button for accepted follow requests */}
+                    {notification.type === 'follow_request' && notification.is_read && notification.data.follower_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        onClick={() => navigate(`/account/${notification.data.follower_id}`)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Ver Perfil
+                      </Button>
+                    )}
+
                     {/* General actions for other notifications */}
-                    {notification.type !== 'collaboration_request' && !notification.is_read && (
+                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && !notification.is_read && (
                       <Button
                         size="sm"
                         variant="ghost"

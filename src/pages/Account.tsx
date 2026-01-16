@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock } from "lucide-react";
+import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
@@ -138,9 +138,10 @@ const Account = () => {
     if (!isOwnProfile) {
       const {
         data: followData
-      } = await supabase.from("user_follows").select("id, status").eq("follower_id", session.user.id).eq("following_id", profileId).single();
+      } = await supabase.from("user_follows").select("id, status").eq("follower_id", session.user.id).eq("following_id", profileId).maybeSingle();
       if (followData) {
-        if (followData.status === 'pending') {
+        const status = (followData as any).status;
+        if (status === 'pending') {
           setFollowRequestPending(true);
           setIsFollowing(false);
         } else {
@@ -432,10 +433,17 @@ const Account = () => {
             {isOwnProfile ? <Button variant="outline" className="w-full" onClick={() => setIsEditDialogOpen(true)}>
                 <Edit2 className="h-4 w-4 mr-2" />
                 Editar Perfil
-              </Button> : <Button variant={isFollowing ? "outline" : "default"} className="w-full" onClick={handleFollow}>
+              </Button> : <Button 
+                variant={isFollowing ? "outline" : followRequestPending ? "secondary" : "default"} 
+                className="w-full" 
+                onClick={handleFollow}
+              >
                 {isFollowing ? <>
                     <UserMinus className="h-4 w-4 mr-2" />
                     Deixar de Seguir
+                  </> : followRequestPending ? <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Pedido Enviado
                   </> : <>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Seguir
@@ -454,8 +462,21 @@ const Account = () => {
               </a>}
           </Card>}
 
+        {/* Private Account Message */}
+        {!isOwnProfile && profile?.is_private && !isFollowing && (
+          <Card className="p-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <Lock className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-bold mb-2">Conta Privada</h3>
+              <p className="text-muted-foreground">
+                Siga esta conta para ver os livros publicados.
+              </p>
+            </div>
+          </Card>
+        )}
+
         {/* Public Books */}
-        {publicBooks.length > 0 && <div>
+        {(isOwnProfile || !profile?.is_private || isFollowing) && publicBooks.length > 0 && <div>
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <BookOpen className="h-6 w-5" />
               Livros Públicos ({publicBooks.length})
