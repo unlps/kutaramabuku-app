@@ -13,7 +13,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BookCard } from "@/components/BookCard";
 import BottomNav from "@/components/BottomNav";
-import { stripHtml } from "@/lib/utils";
+import { stripHtml, sanitizeHtml } from "@/lib/utils";
 interface Ebook {
   id: string;
   title: string;
@@ -341,7 +341,7 @@ export default function BookDetails() {
           <div>
             <h2 className="text-2xl font-bold mb-4">Descrição</h2>
             <div className="text-muted-foreground leading-relaxed text-justify" dangerouslySetInnerHTML={{
-            __html: book.description || "Sem descrição disponível"
+            __html: sanitizeHtml(book.description || "Sem descrição disponível")
           }} />
           </div>
 
