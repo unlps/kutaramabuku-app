@@ -47,6 +47,7 @@ const Account = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [showBookDialog, setShowBookDialog] = useState(false);
+  const [isWishlistBook, setIsWishlistBook] = useState(false);
   const {
     theme
   } = useTheme();
@@ -489,6 +490,7 @@ const Account = () => {
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {publicBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
+            setIsWishlistBook(false);
             setShowBookDialog(true);
           }}>
                   <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
@@ -521,6 +523,7 @@ const Account = () => {
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {privateBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
+            setIsWishlistBook(false);
             setShowBookDialog(true);
           }}>
                   <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
@@ -553,6 +556,7 @@ const Account = () => {
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {wishlist.map(book => book && <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
+            setIsWishlistBook(true);
             setShowBookDialog(true);
           }}>
                       <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
@@ -641,7 +645,7 @@ const Account = () => {
               </div>}
           </div>
 
-          {isOwnProfile ? <DialogFooter className="flex-col sm:flex-row gap-2">
+          {isOwnProfile && !isWishlistBook ? <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Apagar
