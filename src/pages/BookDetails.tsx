@@ -512,7 +512,7 @@ export default function BookDetails() {
           {authorBooks.length > 0 && <div>
               <Separator className="my-6" />
               <h2 className="text-2xl font-bold mb-4">Mais do Autor</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
                 {authorBooks.map(authorBook => <BookCard key={authorBook.id} id={authorBook.id} title={authorBook.title} author={authorBook.author || ""} coverImage={authorBook.cover_image} genre={authorBook.genre} price={authorBook.price} rating={authorBook.rating} />)}
               </div>
             </div>}
@@ -521,7 +521,7 @@ export default function BookDetails() {
           {similarBooks.length > 0 && <div>
               <Separator className="my-6" />
               <h2 className="text-2xl font-bold mb-4">Livros Semelhantes</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
                 {similarBooks.map(similarBook => <BookCard key={similarBook.id} id={similarBook.id} title={similarBook.title} author={similarBook.author || ""} coverImage={similarBook.cover_image} genre={similarBook.genre} price={similarBook.price} rating={similarBook.rating} />)}
               </div>
             </div>}
