@@ -73,7 +73,7 @@ export default function AuthorInput({
       setSearchLoading(true);
       try {
         const { data, error } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("id, full_name, username, avatar_url")
           .or(`full_name.ilike.%${inputValue}%,username.ilike.%${inputValue}%`)
           .limit(5);
