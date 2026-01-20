@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock, ArrowLeft } from "lucide-react";
+import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, HeartOff, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
@@ -689,7 +689,7 @@ const Account = () => {
             </DialogFooter> : <DialogFooter className="flex gap-2">
               {isWishlistBook && (
                 <Button variant="destructive" onClick={handleRemoveFromWishlist} className="flex-1">
-                  <Heart className="mr-2 h-4 w-4" />
+                  <HeartOff className="mr-2 h-4 w-4" />
                   Remover
                 </Button>
               )}
