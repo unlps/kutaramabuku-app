@@ -49,7 +49,7 @@ export const BookCard = ({
     <HoverCard openDelay={200}>
       <HoverCardTrigger asChild>
         <div
-          className="cursor-pointer group w-44 flex-shrink-0 bg-card rounded-xl shadow-md border border-border overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col"
+          className="cursor-pointer group w-[calc(50%-0.5rem)] sm:w-44 flex-shrink-0 bg-card rounded-xl shadow-md border border-border overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col"
           onClick={() => navigate(`/book/${id}`)}
         >
           {/* Cover Image */}
