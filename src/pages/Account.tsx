@@ -270,6 +270,29 @@ const Account = () => {
     setShowBookDialog(false);
     fetchData();
   };
+  const handleRemoveFromWishlist = async () => {
+    if (!selectedBook || !currentUserId) return;
+    const { error } = await supabase
+      .from("wishlist")
+      .delete()
+      .eq("ebook_id", selectedBook.id)
+      .eq("user_id", currentUserId);
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover da lista de desejos",
+        variant: "destructive"
+      });
+      return;
+    }
+    toast({
+      title: "Removido",
+      description: "Livro removido da lista de desejos"
+    });
+    setSelectedBook(null);
+    setShowBookDialog(false);
+    fetchData();
+  };
   const handleDownloadEbook = async () => {
     if (!selectedBook) return;
     try {
@@ -632,7 +655,7 @@ const Account = () => {
               </div>
             </div>
 
-            {isOwnProfile && <div className="border-t pt-4">
+            {isOwnProfile && !isWishlistBook && <div className="border-t pt-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="font-medium">Visibilidade</p>
@@ -663,11 +686,17 @@ const Account = () => {
                   Editar
                 </Button>
               </div>
-            </DialogFooter> : <DialogFooter>
+            </DialogFooter> : <DialogFooter className="flex gap-2">
+              {isWishlistBook && (
+                <Button variant="destructive" onClick={handleRemoveFromWishlist} className="flex-1">
+                  <Heart className="mr-2 h-4 w-4" />
+                  Remover
+                </Button>
+              )}
               <Button onClick={() => {
             setShowBookDialog(false);
             navigate(`/book/${selectedBook?.id}`);
-          }} className="w-full">
+          }} className="flex-1">
                 Ver Detalhes
               </Button>
             </DialogFooter>}
