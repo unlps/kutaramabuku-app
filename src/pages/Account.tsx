@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock } from "lucide-react";
+import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
@@ -376,6 +376,11 @@ const Account = () => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {!isOwnProfile && (
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
             <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 rounded-lg object-cover" />
             <h1 className="text-2xl font-bold">Perfil</h1>
           </div>
