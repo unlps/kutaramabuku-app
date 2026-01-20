@@ -223,6 +223,126 @@ export default function BookDetails() {
         return sorted;
     }
   };
+
+  const handleDownloadFreeBook = async () => {
+    if (!book || book.price !== 0) {
+      toast.error("Este livro não é gratuito");
+      return;
+    }
+
+    try {
+      toast.info("Preparando download...");
+      
+      const htmlToText = (html: string) => {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        return temp.textContent || temp.innerText || '';
+      };
+
+      const { data: chapters } = await supabase
+        .from("chapters")
+        .select("*")
+        .eq("ebook_id", book.id)
+        .order("chapter_order", { ascending: true });
+
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF();
+      let yPosition = 20;
+
+      // Cover page with image
+      if (book.cover_image) {
+        try {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = book.cover_image;
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+          });
+
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imgRatio = img.width / img.height;
+          const pageRatio = pageWidth / pageHeight;
+          let finalWidth, finalHeight, xOffset, yOffset;
+          
+          if (imgRatio > pageRatio) {
+            finalHeight = pageHeight;
+            finalWidth = finalHeight * imgRatio;
+            xOffset = (pageWidth - finalWidth) / 2;
+            yOffset = 0;
+          } else {
+            finalWidth = pageWidth;
+            finalHeight = finalWidth / imgRatio;
+            xOffset = 0;
+            yOffset = (pageHeight - finalHeight) / 2;
+          }
+          pdf.addImage(img, 'JPEG', xOffset, yOffset, finalWidth, finalHeight);
+        } catch (error) {
+          console.error('Erro ao adicionar capa ao PDF:', error);
+        }
+      }
+
+      // Title page
+      pdf.addPage();
+      yPosition = 20;
+      pdf.setFontSize(24);
+      const titleText = htmlToText(book.title);
+      const titleLines = pdf.splitTextToSize(titleText, 170);
+      pdf.text(titleLines, 20, yPosition);
+      yPosition += titleLines.length * 12 + 20;
+      
+      if (book.author) {
+        pdf.setFontSize(14);
+        pdf.text(`Escrito por ${book.author}`, 20, yPosition);
+      }
+
+      // Description page
+      if (book.description) {
+        pdf.addPage();
+        yPosition = 20;
+        pdf.setFontSize(12);
+        const descText = htmlToText(book.description);
+        const descLines = pdf.splitTextToSize(descText, 170);
+        pdf.text(descLines, 20, yPosition);
+      }
+
+      // Chapters
+      chapters?.forEach(chapter => {
+        pdf.addPage();
+        yPosition = 20;
+        pdf.setFontSize(18);
+        const chapterTitle = htmlToText(chapter.title);
+        pdf.text(chapterTitle, 20, yPosition);
+        yPosition += 15;
+        pdf.setFontSize(12);
+        const plainText = htmlToText(chapter.content);
+        const contentLines = pdf.splitTextToSize(plainText, 170);
+        contentLines.forEach((line: string) => {
+          if (yPosition > 280) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+          pdf.text(line, 20, yPosition);
+          yPosition += 7;
+        });
+      });
+
+      pdf.save(`${htmlToText(book.title)}.pdf`);
+
+      // Update download count
+      await supabase
+        .from("ebooks")
+        .update({ downloads: (book.downloads || 0) + 1 })
+        .eq("id", book.id);
+
+      toast.success("Download concluído!");
+    } catch (error) {
+      console.error("Error downloading ebook:", error);
+      toast.error("Erro ao baixar o ebook");
+    }
+  };
+
   const submitReview = async () => {
     const {
       data: {
@@ -325,7 +445,13 @@ export default function BookDetails() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" className="flex-1 py-[8px]">
+              <Button 
+                size="lg" 
+                className="flex-1 py-[8px]"
+                onClick={book.price === 0 ? handleDownloadFreeBook : undefined}
+                disabled={book.price !== 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
                 {book.price === 0 ? "Baixar Grátis" : `Comprar - ${book.price?.toFixed(2)} MZN`}
               </Button>
               <Button variant="outline" size="lg" onClick={toggleWishlist} className="flex-1 py-[8px]">
