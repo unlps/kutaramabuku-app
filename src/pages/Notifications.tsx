@@ -283,41 +283,55 @@ const Notifications = () => {
               <Card
                 key={notification.id}
                 className={cn(
-                  "p-4 transition-all",
+                  "p-3 sm:p-4 transition-all",
                   !notification.is_read && "border-primary/50 bg-primary/5"
                 )}
               >
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="flex gap-2 sm:gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     {getNotificationIcon(notification.type)}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold">{notification.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-semibold text-sm sm:text-base truncate">{notification.title}</h3>
+                          {/* Delete button - mobile inline */}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="flex-shrink-0 h-6 w-6 sm:hidden text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteNotification(notification.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">
                           {notification.message}
                         </p>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground mt-1 block sm:hidden">
+                          {formatDate(notification.created_at)}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      <span className="hidden sm:block text-xs text-muted-foreground whitespace-nowrap">
                         {formatDate(notification.created_at)}
                       </span>
                     </div>
 
                     {/* Collaboration request actions */}
                     {notification.type === 'collaboration_request' && !notification.is_read && (
-                      <div className="flex gap-2 mt-4">
+                      <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
                         <Button
                           size="sm"
                           onClick={() => handleCollaborationResponse(notification, true)}
                           disabled={processingId === notification.id}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
                         >
                           {processingId === notification.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
                           ) : (
-                            <Check className="h-4 w-4 mr-2" />
+                            <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                           )}
                           Aceitar
                         </Button>
@@ -326,9 +340,9 @@ const Notifications = () => {
                           variant="outline"
                           onClick={() => handleCollaborationResponse(notification, false)}
                           disabled={processingId === notification.id}
-                          className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                          className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
                         >
-                          <X className="h-4 w-4 mr-2" />
+                          <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                           Rejeitar
                         </Button>
                       </div>
@@ -336,17 +350,17 @@ const Notifications = () => {
 
                     {/* Follow request actions */}
                     {notification.type === 'follow_request' && !notification.is_read && (
-                      <div className="flex gap-2 mt-4">
+                      <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
                         <Button
                           size="sm"
                           onClick={() => handleFollowRequestResponse(notification, true)}
                           disabled={processingId === notification.id}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
                         >
                           {processingId === notification.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
                           ) : (
-                            <Check className="h-4 w-4 mr-2" />
+                            <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                           )}
                           Aceitar
                         </Button>
@@ -355,9 +369,9 @@ const Notifications = () => {
                           variant="outline"
                           onClick={() => handleFollowRequestResponse(notification, false)}
                           disabled={processingId === notification.id}
-                          className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                          className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
                         >
-                          <X className="h-4 w-4 mr-2" />
+                          <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                           Rejeitar
                         </Button>
                       </div>
@@ -368,10 +382,10 @@ const Notifications = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="mt-3"
+                        className="mt-2 sm:mt-3 h-8 text-xs sm:text-sm"
                         onClick={() => navigate(`/editor?id=${notification.data.ebook_id}`)}
                       >
-                        <BookOpen className="h-4 w-4 mr-2" />
+                        <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Ver Livro
                       </Button>
                     )}
@@ -381,10 +395,10 @@ const Notifications = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="mt-3"
+                        className="mt-2 sm:mt-3 h-8 text-xs sm:text-sm"
                         onClick={() => navigate(`/account/${notification.data.follower_id}`)}
                       >
-                        <UserPlus className="h-4 w-4 mr-2" />
+                        <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Ver Perfil
                       </Button>
                     )}
@@ -394,7 +408,7 @@ const Notifications = () => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="mt-3"
+                        className="mt-2 sm:mt-3 h-8 text-xs sm:text-sm"
                         onClick={() => markAsRead(notification.id)}
                       >
                         Marcar como lida
@@ -402,11 +416,11 @@ const Notifications = () => {
                     )}
                   </div>
 
-                  {/* Delete button */}
+                  {/* Delete button - desktop */}
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="hidden sm:flex flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={() => deleteNotification(notification.id)}
                   >
                     <X className="h-4 w-4" />
