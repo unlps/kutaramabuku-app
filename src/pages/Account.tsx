@@ -399,35 +399,35 @@ const Account = () => {
 
       <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
         {/* Profile Header */}
-        <Card className="p-6">
-          <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
               <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="bg-gradient-primary text-white text-3xl">
+              <AvatarFallback className="bg-gradient-primary text-white text-2xl sm:text-3xl">
                 {profile?.full_name?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">{profile?.full_name || "Usuário"}</h2>
-              {profile?.username && <p className="text-muted-foreground">@{profile.username}</p>}
+            <div className="flex-1 text-center sm:text-left w-full">
+              <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "Usuário"}</h2>
+              {profile?.username && <p className="text-muted-foreground text-sm">@{profile.username}</p>}
 
               {/* Stats */}
-              <div className="flex gap-6 mt-4">
+              <div className="flex justify-center sm:justify-start gap-4 sm:gap-6 mt-4">
                 <div className="text-center">
-                  <div className="text-xl font-bold">{stats.booksCreated}</div>
-                  <div className="text-xs text-muted-foreground">Trabalhos</div>
+                  <div className="text-lg sm:text-xl font-bold">{stats.booksCreated}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">Trabalhos</div>
                 </div>
                 <div className="text-center cursor-pointer hover:opacity-80">
-                  <div className="text-xl font-bold">{stats.followers}</div>
-                  <div className="text-xs text-muted-foreground">Seguidores</div>
+                  <div className="text-lg sm:text-xl font-bold">{stats.followers}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">Seguidores</div>
                 </div>
                 <div className="text-center cursor-pointer hover:opacity-80">
-                  <div className="text-xl font-bold">{stats.following}</div>
-                  <div className="text-xs text-muted-foreground">Seguindo</div>
+                  <div className="text-lg sm:text-xl font-bold">{stats.following}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">Seguindo</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold">{stats.booksRead}</div>
-                  <div className="text-xs text-muted-foreground">Lidos</div>
+                  <div className="text-lg sm:text-xl font-bold">{stats.booksRead}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">Lidos</div>
                 </div>
               </div>
             </div>
