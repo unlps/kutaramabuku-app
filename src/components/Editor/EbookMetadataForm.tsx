@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import AuthorInput from '@/components/AuthorInput';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, ArrowRight, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Author {
@@ -43,6 +43,7 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
   const [isFree, setIsFree] = useState((ebook.price || 0) === 0);
   const [price, setPrice] = useState(String(ebook.price || 0));
   const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(ebook.cover_image);
   const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -69,7 +70,20 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
     }
   };
 
-  const handleContinue = async () => {
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImage(file);
+      setCoverImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveCoverImage = () => {
+    setCoverImage(null);
+    setCoverImagePreview(null);
+  };
+
+  const handleSave = async () => {
     if (!title.trim()) {
       toast({
         title: 'Título obrigatório',
@@ -84,25 +98,79 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
       const authorString = authors.map(a => a.name).join(', ');
       const updatedPrice = isFree ? 0 : parseFloat(price) || 0;
 
-      const updatedEbook: EbookData = {
-        ...ebook,
-        title,
-        description,
-        author: authorString,
-        genre: selectedGenre || null,
-        price: updatedPrice
-      };
+      // Upload cover image if new one was selected
+      let coverUrl = ebook.cover_image;
+      if (coverImage) {
+        const fileExt = coverImage.name.split('.').pop();
+        const fileName = `${ebook.id}-${Date.now()}.${fileExt}`;
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from('ebook-covers')
+          .upload(fileName, coverImage, { upsert: true });
 
-      onContinue(updatedEbook, coverImage);
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('ebook-covers')
+          .getPublicUrl(fileName);
+        coverUrl = publicUrl;
+      } else if (!coverImagePreview) {
+        coverUrl = null;
+      }
+
+      const { error } = await supabase
+        .from('ebooks')
+        .update({
+          title,
+          description,
+          author: authorString,
+          genre: selectedGenre || null,
+          price: updatedPrice,
+          cover_image: coverUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', ebook.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Salvo com sucesso!',
+        description: 'As informações do ebook foram atualizadas.',
+      });
     } catch (error) {
       toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao processar os dados.',
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um erro ao salvar as informações.',
         variant: 'destructive'
       });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleContinue = () => {
+    if (!title.trim()) {
+      toast({
+        title: 'Título obrigatório',
+        description: 'Por favor, insira um título para o ebook.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const authorString = authors.map(a => a.name).join(', ');
+    const updatedPrice = isFree ? 0 : parseFloat(price) || 0;
+
+    const updatedEbook: EbookData = {
+      ...ebook,
+      title,
+      description,
+      author: authorString,
+      genre: selectedGenre || null,
+      price: updatedPrice,
+      cover_image: coverImagePreview
+    };
+
+    onContinue(updatedEbook, coverImage);
   };
 
   return (
@@ -118,52 +186,49 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
         </button>
       </div>
 
-      <div className="flex items-center justify-center p-4 pt-8">
-        <Card className="w-full max-w-2xl p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold">Informações do eBook</h2>
-            <p className="text-muted-foreground">
-              Revise e edite os dados do seu eBook antes de continuar
-            </p>
-          </div>
+      <div className="max-w-4xl mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações do Ebook</CardTitle>
+          </CardHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">
-                Título <span className="text-destructive">*</span>
-              </Label>
+          <CardContent className="space-y-4">
+            {/* Título */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Título</label>
               <Input
-                id="title"
-                placeholder="Digite o título do seu eBook"
-                value={title}
+                value={title.replace(/<[^>]*>/g, '')}
                 onChange={(e) => setTitle(e.target.value)}
-                required
+                placeholder="Título do ebook"
+                className="w-full"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="author">Autores</Label>
+            {/* Descrição */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Descrição</label>
+              <Textarea
+                value={description.replace(/<[^>]*>/g, '')}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descrição do ebook"
+                className="w-full min-h-[200px]"
+              />
+            </div>
+
+            {/* Autores */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Autores</label>
               <AuthorInput
                 initialAuthors={authors}
                 onChange={(newAuthors) => setAuthors(newAuthors)}
               />
             </div>
 
+            {/* Gênero */}
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                placeholder="Descreva seu eBook..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="genre">Gênero</Label>
+              <Label htmlFor="genre-edit">Gênero</Label>
               <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                <SelectTrigger id="genre">
+                <SelectTrigger id="genre-edit">
                   <SelectValue placeholder="Selecione um gênero" />
                 </SelectTrigger>
                 <SelectContent>
@@ -176,16 +241,18 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
               </Select>
             </div>
 
+            {/* Tipo de Preço */}
             <div className="space-y-2">
-              <Label htmlFor="price-type">Tipo de Preço</Label>
+              <Label htmlFor="price-type-edit">Tipo de Preço</Label>
               <Select
                 value={isFree ? 'free' : 'paid'}
                 onValueChange={(value) => {
-                  setIsFree(value === 'free');
-                  if (value === 'free') setPrice('0');
+                  const free = value === 'free';
+                  setIsFree(free);
+                  if (free) setPrice('0');
                 }}
               >
-                <SelectTrigger id="price-type">
+                <SelectTrigger id="price-type-edit">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,11 +262,12 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
               </Select>
             </div>
 
+            {/* Preço */}
             {!isFree && (
               <div className="space-y-2">
-                <Label htmlFor="price">Preço (MZN)</Label>
+                <Label htmlFor="price-edit">Preço (MZN)</Label>
                 <Input
-                  id="price"
+                  id="price-edit"
                   type="number"
                   min="0"
                   step="0.01"
@@ -210,50 +278,78 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="cover">Alterar Capa (opcional)</Label>
-              <Input
-                id="cover"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
-                className="cursor-pointer"
-              />
-              {ebook.cover_image && !coverImage && (
-                <div className="mt-2">
-                  <p className="text-sm text-muted-foreground mb-2">Capa atual:</p>
-                  <img 
-                    src={ebook.cover_image} 
-                    alt="Capa atual" 
-                    className="w-32 h-auto rounded-md border"
+            {/* Capa do Ebook */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Capa do Ebook</label>
+              {coverImagePreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={coverImagePreview}
+                    alt="Capa"
+                    className="w-full max-w-xs h-auto rounded-lg border"
                   />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemoveCoverImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                    className="hidden"
+                    id="cover-upload"
+                  />
+                  <label
+                    htmlFor="cover-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Clique para fazer upload da capa
+                    </p>
+                  </label>
                 </div>
               )}
-              {coverImage && (
-                <p className="text-sm text-muted-foreground">
-                  Nova imagem: {coverImage.name}
-                </p>
-              )}
             </div>
-          </div>
 
-          <Button
-            onClick={handleContinue}
-            disabled={!title || saving}
-            className="w-full bg-gradient-primary hover:opacity-90"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar e Continuar
-              </>
-            )}
-          </Button>
+            {/* Buttons */}
+            <div className="flex items-center gap-3 pt-4">
+              <Button
+                onClick={handleSave}
+                disabled={!title || saving}
+                variant="outline"
+                className="flex-1"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={handleContinue}
+                disabled={!title || saving}
+                className="flex-1 bg-gradient-primary hover:opacity-90"
+              >
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Continuar
+              </Button>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>
