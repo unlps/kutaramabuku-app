@@ -59,12 +59,13 @@ export const BookCard = ({
           {/* Cover Image */}
           <div className="aspect-[2/3] relative overflow-hidden bg-muted">
             {templateId && templateId !== 'none' ? (
-              <div className="absolute inset-0">
+              <div className="absolute inset-0 overflow-hidden">
                 <div 
+                  className="origin-top-left"
                   style={{ 
                     width: '816px', 
                     height: '1056px',
-                    transform: 'scale(0.215)',
+                    transform: 'scale(0.25)',
                     transformOrigin: 'top left'
                   }}
                 >
@@ -81,16 +82,16 @@ export const BookCard = ({
               <img
                 src={coverImage}
                 alt={stripHtml(title)}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/80 to-primary">
+              <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/80 to-primary">
                 <FileText className="h-12 w-12 text-primary-foreground" />
               </div>
             )}
             {price === 0 && (
-              <Badge className="absolute top-2 right-2 bg-primary text-xs shadow-sm">Grátis</Badge>
+              <Badge className="absolute top-2 right-2 bg-primary text-xs shadow-sm z-10">Grátis</Badge>
             )}
           </div>
           
