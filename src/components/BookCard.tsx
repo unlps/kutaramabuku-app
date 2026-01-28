@@ -7,6 +7,8 @@ import { Download, FileText, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { stripHtml } from "@/lib/utils";
+import CoverPreview from "@/components/CoverPreview";
+import { CoverTemplate } from "@/components/templates/covers";
 
 interface BookCardProps {
   id: string;
@@ -21,6 +23,7 @@ interface BookCardProps {
   formats?: string[];
   publishedAt?: string;
   rating?: number;
+  templateId?: string;
 }
 
 export const BookCard = ({
@@ -36,6 +39,7 @@ export const BookCard = ({
   formats = ["PDF"],
   publishedAt,
   rating = 0,
+  templateId,
 }: BookCardProps) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
@@ -54,7 +58,19 @@ export const BookCard = ({
         >
           {/* Cover Image */}
           <div className="aspect-[2/3] relative overflow-hidden bg-muted">
-            {coverImage && !imageError ? (
+            {templateId && templateId !== 'none' ? (
+              <div className="w-full h-full overflow-hidden">
+                <div style={{ transform: 'scale(0.128)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
+                  <CoverPreview
+                    template={(templateId as CoverTemplate) || 'classic'}
+                    title={stripHtml(title)}
+                    author={author}
+                    coverImage={coverImage}
+                    genre={genre}
+                  />
+                </div>
+              </div>
+            ) : coverImage && !imageError ? (
               <img
                 src={coverImage}
                 alt={title}
