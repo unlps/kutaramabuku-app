@@ -6,9 +6,10 @@ export { EducativoCover } from './EducativoCover';
 export { CorporateCover } from './CorporateCover';
 export { RomanceCover } from './RomanceCover';
 
-export type CoverTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'educativo' | 'corporate' | 'romance';
+export type CoverTemplate = 'none' | 'classic' | 'modern' | 'minimal' | 'bold' | 'educativo' | 'corporate' | 'romance';
 
 export const coverTemplates: { id: CoverTemplate; name: string; description: string }[] = [
+  { id: 'none', name: 'Nenhum Template', description: 'Usar apenas a imagem de capa sem template' },
   { id: 'classic', name: 'Clássico', description: 'Design elegante e tradicional' },
   { id: 'modern', name: 'Moderno', description: 'Visual contemporâneo com gradientes' },
   { id: 'minimal', name: 'Minimalista', description: 'Limpo e sofisticado' },
