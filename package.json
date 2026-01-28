@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ckeditor/ckeditor5-react": "^11.0.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -43,6 +44,7 @@
     "@supabase/supabase-js": "^2.58.0",
     "@tanstack/react-query": "^5.83.0",
     "@tiptap/extension-color": "^3.7.0",
+    "@tiptap/extension-link": "^3.17.1",
     "@tiptap/extension-text-align": "^3.7.0",
     "@tiptap/extension-text-style": "^3.7.0",
     "@tiptap/extension-underline": "^3.7.0",
