@@ -34,7 +34,7 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [coverTemplate, setCoverTemplate] = useState<CoverTemplate>('classic');
+  const [coverTemplate, setCoverTemplate] = useState<CoverTemplate>('none');
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [step, setStep] = useState<EditorStep>('metadata');
 
