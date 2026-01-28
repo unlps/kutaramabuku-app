@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import AuthorInput from '@/components/AuthorInput';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Author {
@@ -106,133 +106,141 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8 space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">Informações do eBook</h2>
-          <p className="text-muted-foreground">
-            Revise e edite os dados do seu eBook antes de continuar
-          </p>
-        </div>
+    <div className="min-h-screen bg-background">
+      {/* Header with back button */}
+      <div className="border-b bg-card px-4 py-3">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Voltar</span>
+        </button>
+      </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">
-              Título <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="title"
-              placeholder="Digite o título do seu eBook"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+      <div className="flex items-center justify-center p-4 pt-8">
+        <Card className="w-full max-w-2xl p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold">Informações do eBook</h2>
+            <p className="text-muted-foreground">
+              Revise e edite os dados do seu eBook antes de continuar
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="author">Autores</Label>
-            <AuthorInput
-              initialAuthors={authors}
-              onChange={(newAuthors) => setAuthors(newAuthors)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Descreva seu eBook..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="genre">Gênero</Label>
-            <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-              <SelectTrigger id="genre">
-                <SelectValue placeholder="Selecione um gênero" />
-              </SelectTrigger>
-              <SelectContent>
-                {genres.map((genre) => (
-                  <SelectItem key={genre.id} value={genre.name}>
-                    {genre.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="price-type">Tipo de Preço</Label>
-            <Select
-              value={isFree ? 'free' : 'paid'}
-              onValueChange={(value) => {
-                setIsFree(value === 'free');
-                if (value === 'free') setPrice('0');
-              }}
-            >
-              <SelectTrigger id="price-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">Grátis</SelectItem>
-                <SelectItem value="paid">Pago</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {!isFree && (
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Preço (MZN)</Label>
+              <Label htmlFor="title">
+                Título <span className="text-destructive">*</span>
+              </Label>
               <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                id="title"
+                placeholder="Digite o título do seu eBook"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
               />
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="cover">Alterar Capa (opcional)</Label>
-            <Input
-              id="cover"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
-              className="cursor-pointer"
-            />
-            {ebook.cover_image && !coverImage && (
-              <div className="mt-2">
-                <p className="text-sm text-muted-foreground mb-2">Capa atual:</p>
-                <img 
-                  src={ebook.cover_image} 
-                  alt="Capa atual" 
-                  className="w-32 h-auto rounded-md border"
+            <div className="space-y-2">
+              <Label htmlFor="author">Autores</Label>
+              <AuthorInput
+                initialAuthors={authors}
+                onChange={(newAuthors) => setAuthors(newAuthors)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                placeholder="Descreva seu eBook..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="genre">Gênero</Label>
+              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                <SelectTrigger id="genre">
+                  <SelectValue placeholder="Selecione um gênero" />
+                </SelectTrigger>
+                <SelectContent>
+                  {genres.map((genre) => (
+                    <SelectItem key={genre.id} value={genre.name}>
+                      {genre.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price-type">Tipo de Preço</Label>
+              <Select
+                value={isFree ? 'free' : 'paid'}
+                onValueChange={(value) => {
+                  setIsFree(value === 'free');
+                  if (value === 'free') setPrice('0');
+                }}
+              >
+                <SelectTrigger id="price-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Grátis</SelectItem>
+                  <SelectItem value="paid">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {!isFree && (
+              <div className="space-y-2">
+                <Label htmlFor="price">Preço (MZN)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
                 />
               </div>
             )}
-            {coverImage && (
-              <p className="text-sm text-muted-foreground">
-                Nova imagem: {coverImage.name}
-              </p>
-            )}
-          </div>
-        </div>
 
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={onBack} className="flex-1">
-            Voltar
-          </Button>
+            <div className="space-y-2">
+              <Label htmlFor="cover">Alterar Capa (opcional)</Label>
+              <Input
+                id="cover"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
+                className="cursor-pointer"
+              />
+              {ebook.cover_image && !coverImage && (
+                <div className="mt-2">
+                  <p className="text-sm text-muted-foreground mb-2">Capa atual:</p>
+                  <img 
+                    src={ebook.cover_image} 
+                    alt="Capa atual" 
+                    className="w-32 h-auto rounded-md border"
+                  />
+                </div>
+              )}
+              {coverImage && (
+                <p className="text-sm text-muted-foreground">
+                  Nova imagem: {coverImage.name}
+                </p>
+              )}
+            </div>
+          </div>
+
           <Button
             onClick={handleContinue}
             disabled={!title || saving}
-            className="flex-1 bg-gradient-primary hover:opacity-90"
+            className="w-full bg-gradient-primary hover:opacity-90"
           >
             {saving ? (
               <>
@@ -241,13 +249,13 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
               </>
             ) : (
               <>
-                Continuar para o Editor
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <Save className="mr-2 h-4 w-4" />
+                Salvar e Continuar
               </>
             )}
           </Button>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
