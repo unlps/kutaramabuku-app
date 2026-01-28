@@ -33,6 +33,7 @@ interface Ebook {
   preview_content?: string;
   user_id: string;
   created_at?: string;
+  template_id?: string;
 }
 interface Profile {
   id: string;
@@ -296,7 +297,7 @@ const Discover = () => {
                   Tente ajustar os filtros ou pesquisa
                 </p>
               </div> : <div className="flex flex-wrap gap-4 justify-start">
-                {filteredBooks.map(book => <BookCard key={book.id} id={book.id} title={book.title} author={book.author || "Autor Desconhecido"} coverImage={book.cover_image} description={book.description} genre={book.genre} price={book.price} downloads={book.downloads} pages={book.pages} formats={book.formats} publishedAt={book.published_at} rating={book.rating} />)}
+                {filteredBooks.map(book => <BookCard key={book.id} id={book.id} title={book.title} author={book.author || "Autor Desconhecido"} coverImage={book.cover_image} description={book.description} genre={book.genre} price={book.price} downloads={book.downloads} pages={book.pages} formats={book.formats} publishedAt={book.published_at} rating={book.rating} templateId={book.template_id} />)}
               </div>}
           </>}
 

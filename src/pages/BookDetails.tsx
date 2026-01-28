@@ -13,6 +13,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BookCard } from "@/components/BookCard";
 import BottomNav from "@/components/BottomNav";
+import CoverPreview from "@/components/CoverPreview";
+import { CoverTemplate } from "@/components/templates/covers";
 import { stripHtml, sanitizeHtml } from "@/lib/utils";
 interface Ebook {
   id: string;
@@ -29,6 +31,7 @@ interface Ebook {
   downloads?: number;
   preview_content?: string;
   user_id: string;
+  template_id?: string;
 }
 interface Review {
   id: string;
@@ -398,12 +401,46 @@ export default function BookDetails() {
           {/* Left - Book Cover */}
           <Dialog>
             <DialogTrigger asChild>
-              <div className="bg-muted flex items-center justify-center w-36 h-60 rounded-lg overflow-hidden mx-auto md:mx-0 cursor-pointer hover:opacity-90 transition-opacity">
-                {book.cover_image ? <img src={book.cover_image} alt={book.title} className="object-cover w-full h-full border border-border rounded-lg" /> : <FileText className="h-20 w-20 text-muted-foreground" />}
+              <div className="w-36 h-52 rounded-lg overflow-hidden mx-auto md:mx-0 cursor-pointer hover:opacity-90 transition-opacity shadow-md border border-border">
+                {book.template_id && book.template_id !== 'none' ? (
+                  <div className="w-full h-full" style={{ transform: 'scale(0.132)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
+                    <CoverPreview
+                      template={(book.template_id as CoverTemplate) || 'classic'}
+                      title={stripHtml(book.title)}
+                      author={book.author}
+                      coverImage={book.cover_image}
+                      genre={book.genre}
+                    />
+                  </div>
+                ) : book.cover_image ? (
+                  <img src={book.cover_image} alt={book.title} className="object-cover w-full h-full" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
+                    <FileText className="h-12 w-12 text-white" />
+                  </div>
+                )}
               </div>
             </DialogTrigger>
             <DialogContent className="max-w-md">
-              <img src={book.cover_image} alt={book.title} className="w-full h-auto rounded-lg" />
+              {book.template_id && book.template_id !== 'none' ? (
+                <div className="w-full overflow-hidden rounded-lg" style={{ maxHeight: '80vh' }}>
+                  <div style={{ transform: 'scale(0.45)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
+                    <CoverPreview
+                      template={(book.template_id as CoverTemplate) || 'classic'}
+                      title={stripHtml(book.title)}
+                      author={book.author}
+                      coverImage={book.cover_image}
+                      genre={book.genre}
+                    />
+                  </div>
+                </div>
+              ) : book.cover_image ? (
+                <img src={book.cover_image} alt={book.title} className="w-full h-auto rounded-lg" />
+              ) : (
+                <div className="w-full aspect-[2/3] bg-gradient-primary flex items-center justify-center rounded-lg">
+                  <FileText className="h-20 w-20 text-white" />
+                </div>
+              )}
             </DialogContent>
           </Dialog>
 
@@ -513,7 +550,7 @@ export default function BookDetails() {
               <Separator className="my-6" />
               <h2 className="text-2xl font-bold mb-4">Mais do Autor</h2>
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
-                {authorBooks.map(authorBook => <BookCard key={authorBook.id} id={authorBook.id} title={authorBook.title} author={authorBook.author || ""} coverImage={authorBook.cover_image} genre={authorBook.genre} price={authorBook.price} rating={authorBook.rating} />)}
+                {authorBooks.map(authorBook => <BookCard key={authorBook.id} id={authorBook.id} title={authorBook.title} author={authorBook.author || ""} coverImage={authorBook.cover_image} genre={authorBook.genre} price={authorBook.price} rating={authorBook.rating} templateId={authorBook.template_id} />)}
               </div>
             </div>}
 
@@ -522,7 +559,7 @@ export default function BookDetails() {
               <Separator className="my-6" />
               <h2 className="text-2xl font-bold mb-4">Livros Semelhantes</h2>
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
-                {similarBooks.map(similarBook => <BookCard key={similarBook.id} id={similarBook.id} title={similarBook.title} author={similarBook.author || ""} coverImage={similarBook.cover_image} genre={similarBook.genre} price={similarBook.price} rating={similarBook.rating} />)}
+                {similarBooks.map(similarBook => <BookCard key={similarBook.id} id={similarBook.id} title={similarBook.title} author={similarBook.author || ""} coverImage={similarBook.cover_image} genre={similarBook.genre} price={similarBook.price} rating={similarBook.rating} templateId={similarBook.template_id} />)}
               </div>
             </div>}
 
