@@ -5,3 +5,4 @@ export { default as CoverTemplateSelector } from './CoverTemplateSelector';
 export { default as ChapterSidebar } from './ChapterSidebar';
 export { default as EditorToolbar } from './EditorToolbar';
 export { default as EditorContentComponent } from './EditorContent';
+export { default as EbookMetadataForm } from './EbookMetadataForm';
