@@ -23,13 +23,14 @@ export default function CoverPreview({ template, title, author, coverImage, genr
   const renderCover = () => {
     switch (template) {
       case 'none':
-        // Just display the cover image without any template styling
+      default:
+        // Just display the cover image without any template styling - this is the default
         return (
-          <div className="w-full h-full bg-white flex items-center justify-center">
+          <div className="w-full h-full bg-background flex items-center justify-center">
             {coverImage ? (
               <img src={coverImage} alt={title} className="w-full h-full object-cover" />
             ) : (
-              <div className="text-center text-muted-foreground p-8">
+              <div className="text-center text-muted-foreground p-8 flex flex-col items-center justify-center h-full">
                 <p className="text-lg font-medium">{title}</p>
                 {author && <p className="text-sm mt-2">{author}</p>}
               </div>
@@ -50,8 +51,6 @@ export default function CoverPreview({ template, title, author, coverImage, genr
         return <CorporateCover {...coverProps} />;
       case 'romance':
         return <RomanceCover {...coverProps} />;
-      default:
-        return <ClassicCover {...coverProps} />;
     }
   };
 
