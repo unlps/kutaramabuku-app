@@ -147,6 +147,18 @@ All colors MUST be HSL.
   background: hsl(var(--muted) / 0.3);
   padding: 2rem;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.paged-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  background: hsl(var(--muted) / 0.3);
+  min-height: 100vh;
 }
 
 .a4-page {
@@ -154,13 +166,80 @@ All colors MUST be HSL.
   min-height: 11in;
   margin: 0 auto 2rem auto;
   background: white;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   padding: 1in;
   page-break-after: always;
+  position: relative;
+}
+
+/* Decorative page border */
+.a4-page::before {
+  content: '';
+  position: absolute;
+  top: 0.5in;
+  left: 0.5in;
+  right: 0.5in;
+  bottom: 0.5in;
+  border: 1px solid hsl(var(--border));
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 .a4-page:last-child {
   margin-bottom: 0;
+}
+
+/* Page content wrapper with proper overflow */
+.page-content {
+  min-height: calc(11in - 2in);
+  overflow: visible;
+}
+
+/* Image handling in editor and preview */
+.a4-page img,
+.rich-text-content img,
+.content-section img,
+.ck-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure images don't break across pages */
+.a4-page figure,
+.rich-text-content figure {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin: 1em 0;
+}
+
+/* Image captions */
+.a4-page figcaption,
+.rich-text-content figcaption {
+  text-align: center;
+  font-size: 0.85em;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.5em;
+  font-style: italic;
+}
+
+/* Page break utilities */
+.page-break-before {
+  page-break-before: always;
+  break-before: page;
+}
+
+.page-break-after {
+  page-break-after: always;
+  break-after: page;
+}
+
+.avoid-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .a4-page .ck-editor {
@@ -237,6 +316,191 @@ All colors MUST be HSL.
     min-height: auto;
     font-size: 11pt;
   }
+}
+
+/* Rich Text Content Styles - Shared between Editor and Preview */
+.rich-text-content,
+.ck-content,
+.content-section,
+.a4-page .ck-editor__editable {
+  /* Typography base */
+  font-family: 'Calibri', 'Segoe UI', system-ui, sans-serif;
+  font-size: 12pt;
+  line-height: 1.6;
+  color: #1a1a1a;
+}
+
+.rich-text-content p,
+.ck-content p,
+.content-section p {
+  margin-bottom: 0.75em;
+  line-height: 1.6;
+}
+
+.rich-text-content h1,
+.ck-content h1,
+.content-section h1 {
+  font-size: 24pt;
+  font-weight: bold;
+  margin: 1em 0 0.5em 0;
+}
+
+.rich-text-content h2,
+.ck-content h2,
+.content-section h2 {
+  font-size: 18pt;
+  font-weight: bold;
+  margin: 0.8em 0 0.4em 0;
+}
+
+.rich-text-content h3,
+.ck-content h3,
+.content-section h3 {
+  font-size: 14pt;
+  font-weight: bold;
+  margin: 0.6em 0 0.3em 0;
+}
+
+/* Lists - Critical for paste from Word/Web */
+.rich-text-content ul,
+.ck-content ul,
+.content-section ul {
+  list-style-type: disc;
+  margin: 0.5em 0 1em 0;
+  padding-left: 2em;
+}
+
+.rich-text-content ol,
+.ck-content ol,
+.content-section ol {
+  list-style-type: decimal;
+  margin: 0.5em 0 1em 0;
+  padding-left: 2em;
+}
+
+.rich-text-content li,
+.ck-content li,
+.content-section li {
+  margin-bottom: 0.4em;
+  line-height: 1.5;
+}
+
+.rich-text-content li::marker,
+.ck-content li::marker,
+.content-section li::marker {
+  color: inherit;
+}
+
+/* Nested lists */
+.rich-text-content ul ul,
+.rich-text-content ol ul,
+.ck-content ul ul,
+.ck-content ol ul {
+  list-style-type: circle;
+  margin: 0.25em 0 0.25em 0;
+}
+
+.rich-text-content ul ol,
+.rich-text-content ol ol,
+.ck-content ul ol,
+.ck-content ol ol {
+  list-style-type: lower-alpha;
+  margin: 0.25em 0 0.25em 0;
+}
+
+/* Text formatting */
+.rich-text-content strong,
+.rich-text-content b,
+.ck-content strong,
+.ck-content b,
+.content-section strong,
+.content-section b {
+  font-weight: bold;
+}
+
+.rich-text-content em,
+.rich-text-content i,
+.ck-content em,
+.ck-content i,
+.content-section em,
+.content-section i {
+  font-style: italic;
+}
+
+.rich-text-content u,
+.ck-content u,
+.content-section u {
+  text-decoration: underline;
+}
+
+.rich-text-content s,
+.ck-content s,
+.content-section s {
+  text-decoration: line-through;
+}
+
+/* Blockquotes */
+.rich-text-content blockquote,
+.ck-content blockquote,
+.content-section blockquote {
+  margin: 1em 0 1em 1.5em;
+  padding-left: 1em;
+  border-left: 4px solid #ccc;
+  font-style: italic;
+  color: #555;
+}
+
+/* Links */
+.rich-text-content a,
+.ck-content a,
+.content-section a {
+  color: hsl(214, 74%, 50%);
+  text-decoration: underline;
+}
+
+/* Text alignment */
+.rich-text-content [style*="text-align: center"],
+.ck-content [style*="text-align: center"],
+.content-section [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.rich-text-content [style*="text-align: right"],
+.ck-content [style*="text-align: right"],
+.content-section [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.rich-text-content [style*="text-align: justify"],
+.ck-content [style*="text-align: justify"],
+.content-section [style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+/* Indentation from Word/Web paste */
+.rich-text-content [style*="margin-left"],
+.ck-content [style*="margin-left"],
+.content-section [style*="margin-left"] {
+  margin-left: inherit !important;
+}
+
+/* Tables */
+.rich-text-content table,
+.ck-content table,
+.content-section table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.rich-text-content td,
+.rich-text-content th,
+.ck-content td,
+.ck-content th,
+.content-section td,
+.content-section th {
+  border: 1px solid #ddd;
+  padding: 0.5em;
 }
 
 @layer base {
