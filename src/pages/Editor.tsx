@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRobustEditor } from "@/hooks/useRobustEditor";
 import { useEditorExport } from "@/hooks/useEditorExport";
-import { RobustEditor, EditorHeader, EditorPreview, CoverTemplateSelector } from "@/components/Editor";
+import { RobustEditor, EditorHeader, EditorPreview, CoverTemplateSelector, EbookMetadataForm } from "@/components/Editor";
 import CoverPreview from "@/components/CoverPreview";
 import { CoverTemplate } from "@/components/templates/covers";
 import { Loader2, Palette } from "lucide-react";
@@ -14,13 +14,15 @@ import { Button } from "@/components/ui/button";
 interface Ebook {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   cover_image: string | null;
   template_id: string | null;
   author: string | null;
   genre: string | null;
-  price: number;
+  price: number | null;
 }
+
+type EditorStep = 'metadata' | 'editor';
 
 export default function Editor() {
   const [searchParams] = useSearchParams();
@@ -34,6 +36,7 @@ export default function Editor() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [coverTemplate, setCoverTemplate] = useState<CoverTemplate>('classic');
   const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [step, setStep] = useState<EditorStep>('metadata');
 
   const editorState = useRobustEditor(ebookId || '');
 
@@ -88,6 +91,68 @@ export default function Editor() {
     loadEbook();
   }, [ebookId, loadEbook, navigate]);
 
+  const handleMetadataContinue = async (updatedEbook: Ebook, newCoverImage: File | null) => {
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      let newCoverUrl = updatedEbook.cover_image;
+
+      // Upload new cover if provided
+      if (newCoverImage) {
+        const fileExt = newCoverImage.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${session.user.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('ebook-covers')
+          .upload(filePath, newCoverImage);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('ebook-covers')
+            .getPublicUrl(filePath);
+          newCoverUrl = publicUrl;
+        }
+      }
+
+      // Update ebook in database
+      const { error } = await supabase
+        .from("ebooks")
+        .update({
+          title: updatedEbook.title,
+          description: updatedEbook.description,
+          author: updatedEbook.author,
+          genre: updatedEbook.genre,
+          price: updatedEbook.price,
+          cover_image: newCoverUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", updatedEbook.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setEbook({ ...updatedEbook, cover_image: newCoverUrl });
+      setCoverImage(newCoverUrl);
+      setStep('editor');
+
+      toast({
+        title: "Informações atualizadas!",
+        description: "Agora você pode editar o conteúdo do ebook.",
+      });
+    } catch (error: unknown) {
+      toast({
+        title: "Erro ao salvar",
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!ebook) return;
     setSaving(true);
@@ -127,6 +192,17 @@ export default function Editor() {
 
   if (!ebook) return null;
 
+  // Show metadata form first
+  if (step === 'metadata') {
+    return (
+      <EbookMetadataForm
+        ebook={ebook}
+        onContinue={handleMetadataContinue}
+        onBack={() => navigate("/dashboard")}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div 
@@ -147,6 +223,15 @@ export default function Editor() {
       />
 
       <div className="border-b bg-card/50 px-4 py-2 flex items-center gap-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setStep('metadata')}
+          className="h-8 text-muted-foreground hover:text-foreground"
+        >
+          Editar Informações
+        </Button>
+        
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="h-8">
