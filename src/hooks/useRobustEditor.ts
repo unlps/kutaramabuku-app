@@ -75,9 +75,13 @@ export const useRobustEditor = (ebookId: string) => {
 
       setChapters(typedChapters);
 
-      if (typedChapters.length > 0 && !activeChapterId) {
-        setActiveChapterId(typedChapters[0].id);
-      }
+      // Only set active chapter on initial load
+      setActiveChapterId((prev) => {
+        if (!prev && typedChapters.length > 0) {
+          return typedChapters[0].id;
+        }
+        return prev;
+      });
     } catch (error) {
       console.error('Failed to load chapters:', error);
       toast({
@@ -88,11 +92,13 @@ export const useRobustEditor = (ebookId: string) => {
     } finally {
       setIsLoading(false);
     }
-  }, [ebookId, activeChapterId, toast]);
+  }, [ebookId, toast]);
 
   useEffect(() => {
-    loadChapters();
-  }, [loadChapters]);
+    if (ebookId) {
+      loadChapters();
+    }
+  }, [ebookId, loadChapters]);
 
   // Sync editor content when active chapter changes
   useEffect(() => {
