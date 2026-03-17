@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { coverTemplates, CoverTemplate } from '@/components/templates/covers';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -26,10 +26,10 @@ const CoverTemplateSelector: React.FC<CoverTemplateSelectorProps> = ({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-foreground">Template de Capa</h3>
         <span className="text-xs text-muted-foreground">
-          {coverTemplates.find(t => t.id === selectedTemplate)?.name}
+          {coverTemplates.find((t) => t.id === selectedTemplate)?.name}
         </span>
       </div>
-      
+
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex gap-3 pb-4">
           {coverTemplates.map((template) => (
@@ -46,21 +46,29 @@ const CoverTemplateSelector: React.FC<CoverTemplateSelectorProps> = ({
               title={template.description}
             >
               <div className="w-20 h-28 relative">
-                <div 
-                  className="absolute inset-0 transform scale-[0.1] origin-top-left"
-                  style={{ 
-                    width: '8.5in', 
-                    height: '11in',
-                  }}
-                >
-                  <CoverPreview
-                    template={template.id}
-                    title={title || 'Título'}
-                    author={author}
-                    coverImage={coverImage}
-                    genre={genre}
+                {template.id === 'none' && coverImage ? (
+                  <img
+                    src={coverImage}
+                    alt={title || 'Capa'}
+                    className="w-full h-full object-cover"
                   />
-                </div>
+                ) : (
+                  <div
+                    className="absolute inset-0 transform scale-[0.1] origin-top-left"
+                    style={{
+                      width: '8.5in',
+                      height: '11in',
+                    }}
+                  >
+                    <CoverPreview
+                      template={template.id}
+                      title={title || 'Titulo'}
+                      author={author}
+                      coverImage={coverImage}
+                      genre={genre}
+                    />
+                  </div>
+                )}
               </div>
               <div className="p-1.5 bg-card border-t border-border">
                 <p className="text-[10px] font-medium text-foreground truncate text-center">

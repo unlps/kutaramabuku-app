@@ -255,9 +255,13 @@ export default function Editor() {
               <div className="mt-6">
                 <h4 className="text-sm font-medium text-foreground mb-3">Prévia</h4>
                 <div className="border rounded-lg overflow-hidden shadow-md mx-auto" style={{ width: '300px', height: '388px' }}>
-                  <div style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
-                    <CoverPreview template={coverTemplate} title={ebook.title} author={ebook.author} coverImage={coverImage} genre={ebook.genre} />
-                  </div>
+                  {coverTemplate === 'none' && coverImage ? (
+                    <img src={coverImage} alt={ebook.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
+                      <CoverPreview template={coverTemplate} title={ebook.title} author={ebook.author} coverImage={coverImage} genre={ebook.genre} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
