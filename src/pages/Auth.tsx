@@ -12,6 +12,7 @@ import logo from "@/assets/logo-new.png";
 import authBackground from "@/assets/auth-background.png";
 import { authSchema } from "@/lib/validations";
 const Auth = () => {
+  const appUrl = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -85,7 +86,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${appUrl}/`,
             data: {
               full_name: fullName
             }
@@ -114,7 +115,7 @@ const Auth = () => {
       } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${appUrl}/dashboard`
         }
       });
       if (error) throw error;

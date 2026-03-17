@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { BookOpen, Star } from "lucide-react";
 import { stripHtml } from "@/lib/utils";
 const Index = () => {
+  const appUrl = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +25,7 @@ const Index = () => {
       } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${appUrl}/dashboard`
         }
       });
       if (error) throw error;
