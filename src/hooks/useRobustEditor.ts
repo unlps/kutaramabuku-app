@@ -327,7 +327,7 @@ export const useRobustEditor = (ebookId: string) => {
       );
 
       if (editor) {
-        editor.commands.setContent(nextContent, false);
+        editor.commands.setContent(nextContent, { emitUpdate: false });
       }
 
       try {
@@ -367,7 +367,7 @@ export const useRobustEditor = (ebookId: string) => {
       );
 
       if (editor && activeChapterId === id) {
-        editor.commands.setContent(nextContent, false);
+        editor.commands.setContent(nextContent, { emitUpdate: false });
       }
 
       try {
