@@ -23,6 +23,12 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -205,8 +211,21 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
             <Separator orientation="vertical" className="h-6" />
 
             <ToolbarButton onClick={setLink} isActive={editor.isActive('link')} title="Adicionar link"><LinkIcon className="h-4 w-4" /></ToolbarButton>
-            <ToolbarButton onClick={() => fileInputRef.current?.click()} title="Adicionar imagem do computador"><ImagePlus className="h-4 w-4" /></ToolbarButton>
-            <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={addImageByUrl} title="Adicionar imagem por URL">Img URL</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" title="Adicionar imagem">
+                  <ImagePlus className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
+                  Upload do computador
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={addImageByUrl}>
+                  Inserir URL
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <input
               ref={fileInputRef}
