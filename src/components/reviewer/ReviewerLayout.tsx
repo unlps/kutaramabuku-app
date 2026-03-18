@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +8,15 @@ import {
   LayoutDashboard,
   BookCheck,
   UserCircle,
-  LogOut,
   Menu,
   X,
-  Shield,
-  ChevronRight,
   UserPlus,
+  Sun,
+  Moon,
+  Globe,
+  LogOut,
+  Settings,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoLight from "@/assets/validamabuku-logo-light.png";
@@ -25,23 +28,45 @@ interface ReviewerLayoutProps {
 
 const baseNavItems = [
   { path: "/reviewer/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/reviewer/queue", label: "Fila de Revisão", icon: BookCheck },
-  { path: "/reviewer/profile", label: "Meu Perfil", icon: UserCircle },
+  { path: "/reviewer/queue", label: "Revisão", icon: BookCheck },
+  { path: "/reviewer/profile", label: "Perfil", icon: UserCircle },
 ];
 
 const adminNavItems = [
-  { path: "/reviewer/admin/invites", label: "Gerir Convites", icon: UserPlus },
+  { path: "/reviewer/admin/invites", label: "Convites", icon: UserPlus },
+];
+
+const languages = [
+  { code: "pt", label: "Português", flag: "🇲🇿" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
 ];
 
 const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
   const { reviewerProfile, isLoading } = useReviewerAuth();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState("pt");
+  const langRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleLogout = async () => {
+    setProfileOpen(false);
     await supabase.auth.signOut();
     toast({ title: "Sessão terminada", description: "Até breve!" });
     navigate("/reviewer/auth");
@@ -59,19 +84,9 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
   }
 
   const logo = theme === "dark" ? logoDark : logoLight;
-  const roleBadgeColor =
-    reviewerProfile?.role === "admin"
-      ? "bg-red-500/10 text-red-500 border-red-500/20"
-      : reviewerProfile?.role === "senior_reviewer"
-      ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-
-  const roleLabel =
-    reviewerProfile?.role === "admin"
-      ? "Admin"
-      : reviewerProfile?.role === "senior_reviewer"
-      ? "Senior Reviewer"
-      : "Reviewer";
+  const isAdmin = reviewerProfile?.role === "admin" || reviewerProfile?.role === "senior_reviewer";
+  const allNavItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+  const lang = languages.find((l) => l.code === currentLang) || languages[0];
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -83,42 +98,38 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — narrow icon-based */}
       <aside
         className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen w-72
-          bg-card border-r border-border
-          flex flex-col
+          fixed lg:sticky top-0 left-0 z-50 h-screen w-[76px]
+          bg-gradient-to-b from-[#0a1628] via-[#162d4a] to-[#3b82a0]
+          border-r border-white/10
+          flex flex-col items-center
           transition-transform duration-300 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        {/* Sidebar Header */}
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg object-cover" />
-              <div>
-                <h1 className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  ValidaMabuku
-                </h1>
-                <p className="text-xs text-muted-foreground">Painel de Revisão</p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        {/* Close (mobile) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden absolute top-3 right-1 h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+
+        {/* Logo */}
+        <div className="pt-5 pb-4 flex flex-col items-center border-b border-white/10 w-full">
+          <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg object-cover" />
+          <span className="text-[9px] font-bold mt-1.5 text-white/80 tracking-tight leading-none">
+            ValidaMabuku
+          </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
-          {baseNavItems.map((item) => {
+        <nav className="flex-1 flex flex-col items-center pt-4 gap-1 w-full px-2">
+          {allNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
@@ -129,105 +140,141 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
                   setSidebarOpen(false);
                 }}
                 className={`
-                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                  w-full flex flex-col items-center gap-1 py-2.5 rounded-xl
                   transition-all duration-200 group
                   ${
                     isActive
-                      ? "bg-primary/10 text-primary shadow-sm"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-white/15 text-white"
+                      : "text-white/60 hover:bg-white/10 hover:text-white"
                   }
                 `}
               >
-                <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
-                {item.label}
-                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                <Icon className={`h-5 w-5 ${isActive ? "text-white" : ""} group-hover:scale-110 transition-transform`} />
+                <span className="text-[9px] font-medium leading-none">{item.label}</span>
               </button>
             );
           })}
-
-          {/* Admin-only nav items */}
-          {(reviewerProfile?.role === "admin" || reviewerProfile?.role === "senior_reviewer") && (
-            <>
-              <div className="pt-3 pb-1 px-4">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Administração</p>
-              </div>
-              {adminNavItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => {
-                      navigate(item.path);
-                      setSidebarOpen(false);
-                    }}
-                    className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                      transition-all duration-200 group
-                      ${
-                        isActive
-                          ? "bg-primary/10 text-primary shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }
-                    `}
-                  >
-                    <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
-                    {item.label}
-                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-                  </button>
-                );
-              })}
-            </>
-          )}
         </nav>
-
-
-
-        {/* User Info */}
-        <div className="p-4 border-t border-border space-y-3">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
-              {reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {reviewerProfile?.full_name || "Reviewer"}
-              </p>
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${roleBadgeColor}`}
-              >
-                <Shield className="h-3 w-3" />
-                {roleLabel}
-              </span>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground hover:text-destructive"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Terminar Sessão
-          </Button>
-        </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Top Bar (mobile) */}
-        <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-md border-b border-border lg:hidden">
-          <div className="flex items-center justify-between px-4 py-3">
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
-              <Menu className="h-5 w-5" />
+        {/* ── Fixed Top Toolbar ── */}
+        <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700/50">
+          <div className="flex items-center justify-between px-4 lg:px-6 h-12">
+            {/* Mobile hamburger */}
+            <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(true)}>
+              <Menu className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <img src={logo} alt="ValidaMabuku" className="w-7 h-7 rounded-md" />
-              <span className="text-sm font-bold bg-gradient-primary bg-clip-text text-transparent">
+
+            {/* Mobile logo */}
+            <div className="flex items-center gap-2 lg:hidden">
+              <img src={logo} alt="ValidaMabuku" className="w-6 h-6 rounded-md" />
+              <span className="text-xs font-bold bg-gradient-primary bg-clip-text text-transparent">
                 ValidaMabuku
               </span>
             </div>
-            <div className="w-9" /> {/* Spacer */}
+
+            {/* Spacer on desktop */}
+            <div className="hidden lg:block" />
+
+            {/* Toolbar Actions (right side) */}
+            <div className="flex items-center gap-1">
+              {/* Language Selector */}
+              <div ref={langRef} className="relative">
+                <button
+                  onClick={() => { setLangOpen(!langOpen); setProfileOpen(false); }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{lang.flag} {lang.label}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {langOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg py-1 min-w-[150px] z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {languages.map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() => {
+                          setCurrentLang(l.code);
+                          setLangOpen(false);
+                          toast({ title: "Idioma", description: `Alterado para ${l.label}` });
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors ${
+                          currentLang === l.code ? "text-primary font-medium" : "text-foreground"
+                        }`}
+                      >
+                        <span>{l.flag}</span>
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="w-px h-5 bg-border mx-1" />
+
+              {/* Dark/Light Mode Toggle */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-5 bg-border mx-1" />
+
+              {/* Profile Dropdown */}
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => { setProfileOpen(!profileOpen); setLangOpen(false); }}
+                  className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                    {reviewerProfile?.avatar_url ? (
+                      <img src={reviewerProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R"
+                    )}
+                  </div>
+                  <span className="text-xs font-medium hidden sm:inline max-w-[120px] truncate">
+                    {reviewerProfile?.full_name || "Reviewer"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg py-1 min-w-[180px] z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {/* User info header */}
+                    <div className="px-3 py-2 border-b border-border">
+                      <p className="text-xs font-semibold truncate">{reviewerProfile?.full_name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {reviewerProfile?.role === "admin" ? "Administrador" : "Reviewer"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        navigate("/reviewer/profile");
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Settings className="h-3.5 w-3.5" />
+                      Editar Perfil
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      Terminar Sessão
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </header>
 

@@ -136,7 +136,7 @@ const replaceFirstBlockText = (rawHtml: string, nextTitle: string) => {
   return doc.body.innerHTML;
 };
 
-export const useRobustEditor = (ebookId: string) => {
+export const useRobustEditor = (ebookId: string, isEditable = true) => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -229,6 +229,12 @@ export const useRobustEditor = (ebookId: string) => {
       loadChapters();
     }
   }, [ebookId, loadChapters]);
+
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(isEditable);
+    }
+  }, [editor, isEditable]);
 
   // Sync editor content when active chapter changes
   useEffect(() => {

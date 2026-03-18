@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { reviewerTable } from "@/integrations/supabase/reviewer-client";
+import { useState, useRef } from "react";
+import { reviewerTable, supabase } from "@/integrations/supabase/reviewer-client";
 import { useReviewerAuth } from "@/hooks/useReviewerAuth";
 import ReviewerLayout from "@/components/reviewer/ReviewerLayout";
 import { Card } from "@/components/ui/card";
@@ -17,7 +17,12 @@ import {
   User,
   Save,
   KeyRound,
+  Camera,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+
+const SUPABASE_URL = (supabase as any).supabaseUrl || "https://urlumqeyyeeuxsnnhbcn.supabase.co";
 
 const ReviewerProfile = () => {
   const { reviewerProfile, isLoading } = useReviewerAuth();
@@ -32,6 +37,11 @@ const ReviewerProfile = () => {
   const [copied, setCopied] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  // Avatar state
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Initialize form fields from profile
   if (reviewerProfile && !initialized) {
     setFullName(reviewerProfile.full_name || "");
@@ -39,6 +49,7 @@ const ReviewerProfile = () => {
     setPhone(reviewerProfile.phone || "");
     setSecondaryContact(reviewerProfile.secondary_contact || "");
     setDateOfBirth(reviewerProfile.date_of_birth || "");
+    setAvatarUrl(reviewerProfile.avatar_url || null);
     setInitialized(true);
   }
 
@@ -48,6 +59,114 @@ const ReviewerProfile = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast({ title: "Copiado!", description: "ID Secreto copiado para a área de transferência." });
+  };
+
+  // ── Avatar Upload ──
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !reviewerProfile) return;
+
+    // Validate file
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Ficheiro demasiado grande",
+        description: "A foto deve ter no máximo 2MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Tipo inválido",
+        description: "Por favor selecione uma imagem (JPG, PNG, etc.).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${reviewerProfile.id}/avatar.${ext}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("reviewer-avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("reviewer-avatars")
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl + `?t=${Date.now()}`; // bust cache
+
+      // Update profile
+      const { error: updateError } = await reviewerTable("reviewer_profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", reviewerProfile.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast({
+        title: "Foto actualizada",
+        description: "A sua foto de perfil foi actualizada com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar foto",
+        description: error.message || "Não foi possível carregar a foto.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!reviewerProfile) return;
+    setUploadingAvatar(true);
+
+    try {
+      // List and remove files from the user's folder
+      const { data: files } = await supabase.storage
+        .from("reviewer-avatars")
+        .list(reviewerProfile.id);
+
+      if (files && files.length > 0) {
+        const filePaths = files.map((f: any) => `${reviewerProfile.id}/${f.name}`);
+        await supabase.storage.from("reviewer-avatars").remove(filePaths);
+      }
+
+      // Update profile
+      const { error } = await reviewerTable("reviewer_profiles")
+        .update({ avatar_url: null })
+        .eq("id", reviewerProfile.id);
+
+      if (error) throw error;
+
+      setAvatarUrl(null);
+      toast({
+        title: "Foto removida",
+        description: "A sua foto de perfil foi removida.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover foto",
+        description: error.message || "Não foi possível remover a foto.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -99,6 +218,8 @@ const ReviewerProfile = () => {
       ? "Reviewer Sénior"
       : "Reviewer";
 
+  const initials = reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R";
+
   return (
     <ReviewerLayout>
       <div className="max-w-3xl mx-auto space-y-6">
@@ -109,13 +230,45 @@ const ReviewerProfile = () => {
           </p>
         </div>
 
-        {/* Profile Card */}
+        {/* Profile Card with Avatar */}
         <Card className="p-6 bg-gradient-card">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center text-white font-bold text-xl shadow-glow">
-              {reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R"}
+          <div className="flex items-center gap-5">
+            {/* Avatar */}
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-primary flex items-center justify-center text-white font-bold text-2xl shadow-glow">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
+              {/* Hover overlay */}
+              <div
+                className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="h-5 w-5 text-white" />
+                )}
+              </div>
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+              />
             </div>
-            <div>
+
+            <div className="flex-1">
               <h3 className="text-lg font-bold">{reviewerProfile?.full_name}</h3>
               <div className="flex items-center gap-2 mt-1">
                 <span
@@ -131,6 +284,36 @@ const ReviewerProfile = () => {
                     year: "numeric",
                   })}
                 </span>
+              </div>
+
+              {/* Avatar action buttons */}
+              <div className="flex items-center gap-2 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7 px-3"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                  ) : (
+                    <Camera className="h-3 w-3 mr-1.5" />
+                  )}
+                  {avatarUrl ? "Alterar Foto" : "Adicionar Foto"}
+                </Button>
+                {avatarUrl && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-7 px-3 text-destructive hover:text-destructive"
+                    onClick={handleAvatarRemove}
+                    disabled={uploadingAvatar}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1.5" />
+                    Remover
+                  </Button>
+                )}
               </div>
             </div>
           </div>

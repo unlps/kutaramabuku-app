@@ -14,6 +14,7 @@ import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { stripHtml } from "@/lib/utils";
+import { getEbookReviewState, loadLatestSubmissions, type LatestSubmission } from "@/lib/review-status";
 interface Profile {
   id: string;
   full_name: string;
@@ -40,6 +41,8 @@ const Account = () => {
   });
   const [publicBooks, setPublicBooks] = useState<any[]>([]);
   const [privateBooks, setPrivateBooks] = useState<any[]>([]);
+  const [reviewBooks, setReviewBooks] = useState<any[]>([]);
+  const [submissionMap, setSubmissionMap] = useState<Record<string, LatestSubmission>>({});
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followRequestPending, setFollowRequestPending] = useState(false);
@@ -121,8 +124,22 @@ const Account = () => {
       data: books
     } = await supabase.from("ebooks").select("*").eq("user_id", profileId);
     if (books) {
-      setPublicBooks(books.filter(b => b.is_public));
-      setPrivateBooks(books.filter(b => !b.is_public));
+      const latestSubmissions = await loadLatestSubmissions(books.map((book) => book.id));
+      const nextSubmissionMap = Object.fromEntries(latestSubmissions.entries());
+      setSubmissionMap(nextSubmissionMap);
+
+      setPublicBooks(
+        books.filter((book) => getEbookReviewState(book.is_public, nextSubmissionMap[book.id]).stage === "approved")
+      );
+      setReviewBooks(
+        books.filter((book) => getEbookReviewState(book.is_public, nextSubmissionMap[book.id]).stage === "under_review")
+      );
+      setPrivateBooks(
+        books.filter((book) => {
+          const state = getEbookReviewState(book.is_public, nextSubmissionMap[book.id]);
+          return state.stage === "draft" || state.stage === "changes_requested" || state.stage === "rejected";
+        })
+      );
     }
 
     // Fetch wishlist (only for own profile)
@@ -224,30 +241,10 @@ const Account = () => {
     }
   };
   const handleTogglePublic = async (bookId: string, currentStatus: boolean) => {
-    const {
-      error
-    } = await supabase.from("ebooks").update({
-      is_public: !currentStatus
-    }).eq("id", bookId);
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "N√£o foi poss√≠vel alterar a visibilidade",
-        variant: "destructive"
-      });
-      return;
-    }
     toast({
-      title: currentStatus ? "Livro privado" : "Livro p√∫blico",
-      description: currentStatus ? "Agora apenas voc√™ pode ver este livro" : "Agora todos podem ver este livro no Discover"
+      title: "PublicaÁ„o controlada por revis„o",
+      description: "O livro sÛ fica p˙blico depois de aprovado pelos reviewers."
     });
-    fetchData();
-    if (selectedBook && selectedBook.id === bookId) {
-      setSelectedBook({
-        ...selectedBook,
-        is_public: !currentStatus
-      });
-    }
   };
   const handleDeleteEbook = async () => {
     if (!selectedBook) return;
@@ -395,6 +392,8 @@ const Account = () => {
     }
   };
   const isOwnProfile = !userId || userId === currentUserId;
+  const selectedBookSubmission = selectedBook ? submissionMap[selectedBook.id] : undefined;
+  const selectedBookState = getEbookReviewState(selectedBook?.is_public, selectedBookSubmission);
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -538,6 +537,35 @@ const Account = () => {
           </div>}
 
         {/* Private Books (only for own profile) */}
+        {isOwnProfile && reviewBooks.length > 0 && <div>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Livros em Avalia√ß√£o ({reviewBooks.length})
+            </h3>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {reviewBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
+            setSelectedBook(book);
+            setIsWishlistBook(false);
+            setShowBookDialog(true);
+          }}>
+                  <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
+                  </div>
+                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                    {book.author || "Autor Desconhecido"}
+                  </p>
+                  <div className="pt-2 border-t">
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+                      <Clock className="h-3 w-3" />
+                      Em avalia√ß√£o
+                    </span>
+                  </div>
+                </Card>)}
+            </div>
+          </div>}
+
+        {/* Private Books (only for own profile) */}
         {isOwnProfile && privateBooks.length > 0 && <div>
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
@@ -655,36 +683,64 @@ const Account = () => {
               </div>
             </div>
 
-            {isOwnProfile && !isWishlistBook && <div className="border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">Visibilidade</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedBook?.is_public ? "Livro vis√≠vel para todos no Discover" : "Livro vis√≠vel apenas para voc√™"}
-                    </p>
+            {isOwnProfile && !isWishlistBook && <div className="border-t pt-4 space-y-3">
+                <div className="space-y-1">
+                  <p className="font-medium">Estado editorial</p>
+                  <div className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${selectedBookState.badgeClassName}`}>
+                    {selectedBookState.label}
                   </div>
-                  <Switch checked={selectedBook?.is_public || false} onCheckedChange={() => selectedBook && handleTogglePublic(selectedBook.id, selectedBook.is_public)} />
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBookState.description}
+                  </p>
                 </div>
+                {selectedBookSubmission?.submitted_at && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Enviado para avaliaÁ„o</p>
+                      <p className="font-medium">
+                        {new Date(selectedBookSubmission.submitted_at).toLocaleDateString("pt-PT", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric"
+                    })}
+                      </p>
+                    </div>
+                    {selectedBookSubmission.reviewed_at && <div>
+                        <p className="text-muted-foreground">Respondido em</p>
+                        <p className="font-medium">
+                          {new Date(selectedBookSubmission.reviewed_at).toLocaleDateString("pt-PT", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric"
+                      })}
+                        </p>
+                      </div>}
+                  </div>}
               </div>}
           </div>
 
           {isOwnProfile && !isWishlistBook ? <DialogFooter className="flex-col sm:flex-row gap-2">
-              <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Apagar
-              </Button>
+              {selectedBookState.canEdit && <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Apagar
+                </Button>}
               <div className="flex gap-2 w-full sm:w-auto">
                 <Button variant="outline" onClick={handleDownloadEbook} className="flex-1 sm:flex-none">
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </Button>
-                <Button onClick={() => {
+                {selectedBookState.canEdit ? <Button onClick={() => {
               navigate(`/editor?id=${selectedBook?.id}`);
               setShowBookDialog(false);
             }} className="flex-1 sm:flex-none">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </Button>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar
+                  </Button> : <Button onClick={() => {
+              setShowBookDialog(false);
+              navigate(`/book/${selectedBook?.id}`);
+            }} className="flex-1 sm:flex-none">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Ler
+                  </Button>}
               </div>
             </DialogFooter> : <DialogFooter className="flex gap-2">
               {isWishlistBook && (
@@ -711,3 +767,5 @@ const Account = () => {
     </div>;
 };
 export default Account;
+
+

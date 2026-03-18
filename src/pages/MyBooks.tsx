@@ -68,30 +68,10 @@ const MyBooks = () => {
     }
   };
   const handleTogglePublic = async (ebookId: string, currentStatus: boolean) => {
-    const {
-      error
-    } = await supabase.from("ebooks").update({
-      is_public: !currentStatus
-    }).eq("id", ebookId);
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "NÃ£o foi possÃ­vel alterar a visibilidade",
-        variant: "destructive"
-      });
-      return;
-    }
     toast({
-      title: currentStatus ? "Livro privado" : "Livro pÃºblico",
-      description: currentStatus ? "Agora apenas vocÃª pode ver este livro" : "Agora todos podem ver este livro no Discover"
+      title: "Publicação controlada por revisão",
+      description: "O livro só fica público depois de aprovado pelos reviewers."
     });
-    fetchEbooks();
-    if (selectedEbook && selectedEbook.id === ebookId) {
-      setSelectedEbook({
-        ...selectedEbook,
-        is_public: !currentStatus
-      });
-    }
   };
   const handleDeleteEbook = async () => {
     if (!selectedEbook) return;

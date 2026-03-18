@@ -21,6 +21,10 @@ interface Notification {
     book_author_id?: string;
     ebook_title?: string;
     follower_id?: string;
+    submission_id?: string;
+    status?: string;
+    review_notes?: string;
+    rejection_reason?: string;
   };
   is_read: boolean;
   created_at: string;
@@ -238,6 +242,8 @@ const Notifications = () => {
         return <Users className="h-5 w-5 text-primary" />;
       case 'follow_request':
         return <UserPlus className="h-5 w-5 text-primary" />;
+      case 'submission_reviewed':
+        return <BookOpen className="h-5 w-5 text-primary" />;
       default:
         return <Bell className="h-5 w-5 text-primary" />;
     }
@@ -403,8 +409,36 @@ const Notifications = () => {
                       </Button>
                     )}
 
+                    {notification.type === 'submission_reviewed' && (
+                      <div className="mt-3 space-y-3">
+                        {(notification.data.review_notes || notification.data.rejection_reason) && (
+                          <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                            {notification.data.review_notes && (
+                              <p>{notification.data.review_notes}</p>
+                            )}
+                            {notification.data.rejection_reason && (
+                              <p className="mt-2 text-red-600">{notification.data.rejection_reason}</p>
+                            )}
+                          </div>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs sm:text-sm"
+                          onClick={() =>
+                            notification.data.status === "approved"
+                              ? navigate(`/book/${notification.data.ebook_id}`)
+                              : navigate(`/editor?id=${notification.data.ebook_id}`)
+                          }
+                        >
+                          <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                          {notification.data.status === "approved" ? "Ler Livro" : "Abrir Editor"}
+                        </Button>
+                      </div>
+                    )}
+
                     {/* General actions for other notifications */}
-                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && !notification.is_read && (
+                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && notification.type !== 'submission_reviewed' && !notification.is_read && (
                       <Button
                         size="sm"
                         variant="ghost"

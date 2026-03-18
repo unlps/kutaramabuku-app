@@ -476,25 +476,9 @@ const Dashboard = () => {
                 </div>
                 <button
                   onClick={async () => {
-                    if (!selectedEbook) return;
-                    const newValue = !selectedEbook.is_public;
-                    const { error } = await supabase
-                      .from("ebooks")
-                      .update({ is_public: newValue })
-                      .eq("id", selectedEbook.id);
-                    if (error) {
-                      toast({
-                        title: "Erro",
-                        description: "NÃ£o foi possÃ­vel alterar a visibilidade",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    setSelectedEbook({ ...selectedEbook, is_public: newValue });
-                    fetchData();
                     toast({
-                      title: "Visibilidade alterada",
-                      description: newValue ? "O livro agora estÃ¡ pÃºblico" : "O livro agora estÃ¡ privado"
+                      title: "Publicação controlada por revisão",
+                      description: "O livro só fica público depois de aprovado pelos reviewers."
                     });
                   }}
                   className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors cursor-pointer ${selectedEbook?.is_public ? 'bg-primary justify-end' : 'bg-muted justify-start'}`}

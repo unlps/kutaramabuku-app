@@ -194,7 +194,8 @@ const CreateEbook = () => {
         cover_image: coverImageUrl,
         genre: selectedGenre || null,
         price: isFree ? 0 : parseFloat(price) || 0,
-        pages: origin === "import" ? parsedChapters.length : 0
+        pages: origin === "import" ? parsedChapters.length : 0,
+        is_public: false
       }).select().single();
       if (error) throw error;
 

@@ -78,10 +78,19 @@ export default function BookDetails() {
   const fetchBookDetails = async () => {
     try {
       const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const {
         data: bookData,
         error: bookError
       } = await supabase.from("ebooks").select("*").eq("id", id).single();
       if (bookError) throw bookError;
+
+      if (!bookData.is_public && bookData.user_id !== user?.id) {
+        throw new Error("Este livro ainda não está disponível publicamente.");
+      }
+
       setBook(bookData);
 
       // Fetch reviews

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
 import { reviewerTable } from "@/integrations/supabase/reviewer-client";
 import { useReviewerAuth } from "@/hooks/useReviewerAuth";
@@ -16,11 +17,18 @@ import {
   BookOpen,
   TrendingUp,
   BarChart3,
+  Shield,
+  Building2,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import type { ReviewerStats, BookSubmission } from "@/types/reviewer-types";
+import logoLight from "@/assets/validamabuku-logo-light.png";
+import logoDark from "@/assets/validamabuku-logo-dark.png";
 
 const ReviewerDashboard = () => {
   const { reviewerProfile, isLoading } = useReviewerAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [stats, setStats] = useState<ReviewerStats>({
     pendingCount: 0,
@@ -41,17 +49,14 @@ const ReviewerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      // Pending count
       const { count: pendingCount } = await reviewerTable("book_submissions")
         .select("*", { count: "exact", head: true })
         .eq("status", "pending_review");
 
-      // In review count
       const { count: inReviewCount } = await reviewerTable("book_submissions")
         .select("*", { count: "exact", head: true })
         .eq("status", "in_review");
 
-      // Approved today
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const { count: approvedToday } = await reviewerTable("book_submissions")
@@ -59,18 +64,15 @@ const ReviewerDashboard = () => {
         .eq("status", "approved")
         .gte("reviewed_at", todayStart.toISOString());
 
-      // Rejected total
       const { count: rejectedCount } = await reviewerTable("book_submissions")
         .select("*", { count: "exact", head: true })
         .eq("status", "rejected");
 
-      // Total reviewed by this reviewer
       const { count: totalReviewed } = await reviewerTable("book_submissions")
         .select("*", { count: "exact", head: true })
         .eq("reviewer_id", reviewerProfile?.id)
         .in("status", ["approved", "rejected", "revision_requested"]);
 
-      // Urgent (pending more than 3 days)
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
       const { count: urgent } = await reviewerTable("book_submissions")
@@ -155,202 +157,307 @@ const ReviewerDashboard = () => {
 
   if (isLoading) return null;
 
+  const logo = theme === "dark" ? logoDark : logoLight;
+  const roleBadgeColor =
+    reviewerProfile?.role === "admin"
+      ? "bg-red-500/10 text-red-500 border-red-500/20"
+      : reviewerProfile?.role === "senior_reviewer"
+      ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  const roleLabel =
+    reviewerProfile?.role === "admin"
+      ? "Admin"
+      : reviewerProfile?.role === "senior_reviewer"
+      ? "Senior Reviewer"
+      : "Reviewer";
+
+  const total = stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount;
+
   return (
     <ReviewerLayout>
-      <div className="space-y-8 max-w-6xl mx-auto">
-        {/* Welcome */}
+      <div className="space-y-6 max-w-6xl mx-auto">
+        {/* ── Top Row: Profile Card + Welcome Banner ── */}
         <div>
-          <h2 className="text-2xl font-bold">
-            Olá, {reviewerProfile?.full_name?.split(" ")[0]} 👋
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Aqui está o resumo do painel de revisão.
+          <h2 className="text-2xl font-bold mb-1">Painel de Revisão</h2>
+          <p className="text-sm text-muted-foreground">
+            Início / Painel ValidaMabuku
           </p>
         </div>
 
-        {/* Urgent Alert */}
-        {urgentCount > 0 && (
-          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-5 py-4 animate-pulse">
-            <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">
-                {urgentCount} livro{urgentCount > 1 ? "s" : ""} há mais de 3 dias sem revisão
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Profile Card */}
+          <Card className="p-6 border">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center text-white text-2xl font-bold mb-3 shadow-lg overflow-hidden">
+                {reviewerProfile?.avatar_url ? (
+                  <img src={reviewerProfile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R"
+                )}
+              </div>
+              <h3 className="text-lg font-bold">{reviewerProfile?.full_name || "Reviewer"}</h3>
+              {reviewerProfile?.publisher_name && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <Building2 className="h-3 w-3" />
+                  {reviewerProfile.publisher_name}
+                </p>
+              )}
+              <span
+                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border mt-3 ${roleBadgeColor}`}
+              >
+                <Shield className="h-3 w-3" />
+                {roleLabel}
+              </span>
+
+              <div className="flex gap-2 mt-5 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => navigate("/reviewer/profile")}
+                >
+                  <Settings className="h-3.5 w-3.5 mr-1.5" />
+                  Editar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-muted-foreground hover:text-destructive"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    navigate("/reviewer/auth");
+                  }}
+                >
+                  <LogOut className="h-3.5 w-3.5 mr-1.5" />
+                  Sair
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick links */}
+            <div className="mt-5 pt-5 border-t border-border space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Atalhos
               </p>
-              <p className="text-xs text-muted-foreground">Necessita de atenção urgente</p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
-              onClick={() => navigate("/reviewer/queue")}
-            >
-              Ver Fila
-            </Button>
-          </div>
-        )}
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-5 bg-gradient-card shadow-card hover:shadow-glow transition-all duration-300 group">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Pendentes
-                </p>
-                <p className="text-3xl font-bold mt-2">{stats.pendingCount}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Clock className="h-5 w-5 text-amber-500" />
-              </div>
+              {[
+                { label: "Fila de Revisão", path: "/reviewer/queue", icon: BookCheck },
+                { label: "Meu Perfil", path: "/reviewer/profile", icon: Shield },
+              ].map((link) => (
+                <button
+                  key={link.path}
+                  onClick={() => navigate(link.path)}
+                  className="w-full flex items-center gap-2 text-sm text-primary hover:underline py-1"
+                >
+                  <link.icon className="h-3.5 w-3.5" />
+                  {link.label}
+                </button>
+              ))}
             </div>
           </Card>
 
-          <Card className="p-5 bg-gradient-card shadow-card hover:shadow-glow transition-all duration-300 group">
-            <div className="flex items-start justify-between">
+          {/* Welcome Banner */}
+          <Card className="lg:col-span-2 p-0 overflow-hidden border relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
+            <div className="relative p-8 flex flex-col justify-between h-full">
               <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Em Revisão
+                <div className="flex items-center gap-3 mb-4">
+                  <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Bem-vindo ao</p>
+                    <h3 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      ValidaMabuku
+                    </h3>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold leading-snug">
+                  Olá, {reviewerProfile?.full_name?.split(" ")[0]}
                 </p>
-                <p className="text-3xl font-bold mt-2">{stats.inReviewCount}</p>
+                <p className="text-muted-foreground mt-2 text-sm max-w-md">
+                  Gere e valide as submissões de livros. O teu papel é fundamental para garantir a
+                  qualidade do catálogo Kutara Mabuku.
+                </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BookCheck className="h-5 w-5 text-blue-500" />
-              </div>
-            </div>
-          </Card>
 
-          <Card className="p-5 bg-gradient-card shadow-card hover:shadow-glow transition-all duration-300 group">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Aprovados Hoje
-                </p>
-                <p className="text-3xl font-bold mt-2 text-emerald-500">{stats.approvedToday}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5 bg-gradient-card shadow-card hover:shadow-glow transition-all duration-300 group">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  Total Revistos
-                </p>
-                <p className="text-3xl font-bold mt-2">{stats.totalReviewed}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </div>
+              {/* Urgent alert inside banner */}
+              {urgentCount > 0 && (
+                <div className="mt-6 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 animate-pulse" />
+                  <p className="text-sm flex-1">
+                    <strong>{urgentCount}</strong> livro{urgentCount > 1 ? "s" : ""} há mais de 3 dias sem revisão
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                    onClick={() => navigate("/reviewer/queue")}
+                  >
+                    Ver Fila
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </div>
 
-        {/* Recent Submissions */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold">Submissões Recentes</h3>
+        {/* ── Stats Row ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Pendentes",
+              value: stats.pendingCount,
+              icon: Clock,
+              color: "text-amber-500",
+              iconBg: "bg-amber-500/10",
+            },
+            {
+              label: "Em Revisão",
+              value: stats.inReviewCount,
+              icon: BookCheck,
+              color: "text-blue-500",
+              iconBg: "bg-blue-500/10",
+            },
+            {
+              label: "Aprovados Hoje",
+              value: stats.approvedToday,
+              icon: CheckCircle2,
+              color: "text-emerald-500",
+              iconBg: "bg-emerald-500/10",
+            },
+            {
+              label: "Total Revistos",
+              value: stats.totalReviewed,
+              icon: TrendingUp,
+              color: "text-primary",
+              iconBg: "bg-primary/10",
+            },
+          ].map((stat) => (
+            <Card
+              key={stat.label}
+              className="p-5 border text-center relative overflow-hidden hover:shadow-card transition-all duration-300 group"
+            >
+              <div className={`w-8 h-8 rounded-lg ${stat.iconBg} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+              <p className={`text-4xl font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-2 font-medium">{stat.label}</p>
+            </Card>
+          ))}
+        </div>
+
+        {/* ── Submissions Table ── */}
+        <Card className="border overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h3 className="font-bold flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" />
+              Submissões Recentes
+            </h3>
             <Button
               variant="ghost"
               size="sm"
-              className="text-primary"
+              className="text-primary text-xs"
               onClick={() => navigate("/reviewer/queue")}
             >
-              Ver todos <ChevronRight className="h-4 w-4 ml-1" />
+              Ver todos <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
           </div>
 
           {recentSubmissions.length === 0 ? (
-            <Card className="p-12 text-center">
-              <BookCheck className="h-16 w-16 mx-auto text-muted-foreground mb-4 opacity-50" />
-              <h4 className="text-lg font-semibold mb-2">Nenhuma submissão</h4>
+            <div className="p-12 text-center">
+              <BookCheck className="h-14 w-14 mx-auto text-muted-foreground mb-4 opacity-40" />
+              <h4 className="text-base font-semibold mb-1">Nenhuma submissão</h4>
               <p className="text-muted-foreground text-sm">
                 Ainda não existem livros submetidos para revisão.
               </p>
-            </Card>
+            </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-border">
               {recentSubmissions.map((submission) => (
-                <Card
+                <div
                   key={submission.id}
-                  className="p-4 hover:shadow-card transition-all duration-200 cursor-pointer group border"
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 transition-colors cursor-pointer group"
                   onClick={() => navigate(`/reviewer/book/${submission.id}`)}
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Cover */}
-                    <div className="w-12 h-16 rounded-lg bg-gradient-primary flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {submission.ebook?.cover_image ? (
-                        <img
-                          src={submission.ebook.cover_image}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <BookOpen className="h-6 w-6 text-white" />
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
-                        {stripHtml(submission.ebook?.title || "Sem título")}
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        por {submission.submitter?.full_name || "Autor desconhecido"}
-                        {submission.ebook?.genre && (
-                          <span className="ml-2 text-primary/70">· {submission.ebook.genre}</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Submetido em{" "}
-                        {new Date(submission.submitted_at).toLocaleDateString("pt-PT", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex-shrink-0">
-                      {getStatusBadge(submission.status)}
-                    </div>
-
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                  {/* Cover */}
+                  <div className="w-10 h-14 rounded-lg bg-gradient-primary flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                    {submission.ebook?.cover_image ? (
+                      <img
+                        src={submission.ebook.cover_image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <BookOpen className="h-5 w-5 text-white" />
+                    )}
                   </div>
-                </Card>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                      {stripHtml(submission.ebook?.title || "Sem título")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      por {submission.submitter?.full_name || "Autor desconhecido"}
+                      {submission.ebook?.genre && (
+                        <span className="ml-2 text-primary/70">· {submission.ebook.genre}</span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Date */}
+                  <p className="text-xs text-muted-foreground hidden md:block flex-shrink-0">
+                    {new Date(submission.submitted_at).toLocaleDateString("pt-PT", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </p>
+
+                  {/* Status */}
+                  <div className="flex-shrink-0">{getStatusBadge(submission.status)}</div>
+
+                  {/* Action */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-shrink-0 hidden sm:flex h-8 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/reviewer/book/${submission.id}`);
+                    }}
+                  >
+                    Rever
+                  </Button>
+                </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
-        {/* Activity Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-6 bg-gradient-card">
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Distribuição de Estados</h3>
+        {/* ── Bottom Two-Column ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Distribution Chart */}
+          <Card className="border overflow-hidden">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <h3 className="font-bold text-sm">Distribuição de Estados</h3>
             </div>
-            <div className="space-y-3">
+            <div className="p-6 space-y-4">
               {[
-                { label: "Pendentes", count: stats.pendingCount, color: "bg-amber-500", total: stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount },
-                { label: "Em Revisão", count: stats.inReviewCount, color: "bg-blue-500", total: stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount },
-                { label: "Aprovados", count: stats.approvedToday, color: "bg-emerald-500", total: stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount },
-                { label: "Rejeitados", count: stats.rejectedCount, color: "bg-red-500", total: stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount },
+                { label: "Pendentes", count: stats.pendingCount, color: "bg-amber-500" },
+                { label: "Em Revisão", count: stats.inReviewCount, color: "bg-blue-500" },
+                { label: "Aprovados", count: stats.approvedToday, color: "bg-emerald-500" },
+                { label: "Rejeitados", count: stats.rejectedCount, color: "bg-red-500" },
               ].map((item) => {
-                const percentage = item.total > 0 ? (item.count / item.total) * 100 : 0;
+                const pct = total > 0 ? (item.count / total) * 100 : 0;
                 return (
                   <div key={item.label}>
-                    <div className="flex items-center justify-between text-sm mb-1">
+                    <div className="flex items-center justify-between text-sm mb-1.5">
                       <span className="text-muted-foreground">{item.label}</span>
-                      <span className="font-medium">{item.count}</span>
+                      <span className="font-semibold">{item.count}</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${item.color} rounded-full transition-all duration-500`}
-                        style={{ width: `${percentage}%` }}
+                        className={`h-full ${item.color} rounded-full transition-all duration-700`}
+                        style={{ width: `${pct}%` }}
                       />
                     </div>
                   </div>
@@ -359,27 +466,25 @@ const ReviewerDashboard = () => {
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-card">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">As Minhas Métricas</h3>
+          {/* My Performance */}
+          <Card className="border overflow-hidden">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h3 className="font-bold text-sm">As Minhas Métricas</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-muted/50 rounded-xl">
-                <p className="text-2xl font-bold text-primary">{stats.totalReviewed}</p>
-                <p className="text-xs text-muted-foreground mt-1">Livros Revistos</p>
-              </div>
-              <div className="text-center p-4 bg-muted/50 rounded-xl">
-                <p className="text-2xl font-bold text-emerald-500">{stats.approvedToday}</p>
-                <p className="text-xs text-muted-foreground mt-1">Aprovados Hoje</p>
-              </div>
-              <div className="text-center p-4 bg-muted/50 rounded-xl">
-                <p className="text-2xl font-bold text-amber-500">{stats.pendingCount}</p>
-                <p className="text-xs text-muted-foreground mt-1">Na Fila</p>
-              </div>
-              <div className="text-center p-4 bg-muted/50 rounded-xl">
-                <p className="text-2xl font-bold text-blue-500">{stats.inReviewCount}</p>
-                <p className="text-xs text-muted-foreground mt-1">Em Progresso</p>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Livros Revistos", value: stats.totalReviewed, color: "text-primary" },
+                  { label: "Aprovados Hoje", value: stats.approvedToday, color: "text-emerald-500" },
+                  { label: "Na Fila", value: stats.pendingCount, color: "text-amber-500" },
+                  { label: "Em Progresso", value: stats.inReviewCount, color: "text-blue-500" },
+                ].map((metric) => (
+                  <div key={metric.label} className="text-center p-4 bg-muted/40 rounded-xl">
+                    <p className={`text-3xl font-bold ${metric.color}`}>{metric.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">{metric.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </Card>

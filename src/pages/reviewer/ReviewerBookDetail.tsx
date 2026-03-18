@@ -106,22 +106,27 @@ const ReviewerBookDetail = () => {
 
     setActionLoading(newStatus);
     try {
-      const updateData: Record<string, unknown> = {
-        status: newStatus,
-        reviewer_id: reviewerProfile.id,
-        review_notes: reviewNotes,
-        reviewed_at: new Date().toISOString(),
-      };
+      if (newStatus === "in_review") {
+        const { error } = await reviewerTable("book_submissions")
+          .update({
+            status: newStatus,
+            reviewer_id: reviewerProfile.id,
+            review_notes: reviewNotes,
+            reviewed_at: null,
+          })
+          .eq("id", submission.id);
 
-      if (newStatus === "rejected") {
-        updateData.rejection_reason = rejectionReason;
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).rpc("reviewer_resolve_submission", {
+          p_submission_id: submission.id,
+          p_status: newStatus,
+          p_review_notes: reviewNotes || null,
+          p_rejection_reason: newStatus === "rejected" ? rejectionReason : null,
+        });
+
+        if (error) throw error;
       }
-
-      const { error } = await reviewerTable("book_submissions")
-        .update(updateData)
-        .eq("id", submission.id);
-
-      if (error) throw error;
 
       const actionLabels: Record<string, string> = {
         approved: "Livro aprovado com sucesso!",
