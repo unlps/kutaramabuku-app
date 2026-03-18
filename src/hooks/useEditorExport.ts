@@ -23,19 +23,16 @@ export const useEditorExport = ({
 }: UseEditorExportOptions) => {
   const { toast } = useToast();
 
-  /**
-   * Combina todos os capítulos em um único HTML com quebras de página
-   */
   const getCombinedContent = useCallback((): string => {
     if (chapters.length === 0) return '';
 
     return chapters
       .sort((a, b) => a.chapter_order - b.chapter_order)
       .map((chapter, index) => {
-        // Adiciona título do capítulo e conteúdo com quebra de página
-        const chapterTitle = `<h1 style="text-align: center; page-break-before: ${index === 0 ? 'auto' : 'always'}; margin-top: 2em;">${chapter.title}</h1>`;
+        const chapterBreak = index > 0 ? '<div data-page-break="chapter"></div>' : '';
+        const chapterTitle = `<h1 style="text-align: center; margin-top: 2em;">${chapter.title}</h1>`;
         const content = chapter.content || '';
-        return `${chapterTitle}\n${content}`;
+        return `${chapterBreak}\n${chapterTitle}\n${content}`;
       })
       .join('\n\n');
   }, [chapters]);
@@ -43,8 +40,8 @@ export const useEditorExport = ({
   const handleExportPDF = useCallback(async () => {
     if (chapters.length === 0) {
       toast({
-        title: 'Sem conteúdo',
-        description: 'Adicione pelo menos um capítulo antes de exportar.',
+        title: 'Sem conteudo',
+        description: 'Adicione pelo menos um capitulo antes de exportar.',
         variant: 'destructive',
       });
       return;
@@ -81,8 +78,8 @@ export const useEditorExport = ({
   const handleExportDOCX = useCallback(async () => {
     if (chapters.length === 0) {
       toast({
-        title: 'Sem conteúdo',
-        description: 'Adicione pelo menos um capítulo antes de exportar.',
+        title: 'Sem conteudo',
+        description: 'Adicione pelo menos um capitulo antes de exportar.',
         variant: 'destructive',
       });
       return;

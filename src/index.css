@@ -197,6 +197,14 @@ All colors MUST be HSL.
   overflow: visible;
 }
 
+.page-content .ProseMirror,
+.chapter-content,
+.chapter-content * {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
 /* Image handling in editor and preview */
 .a4-page img,
 .rich-text-content img,

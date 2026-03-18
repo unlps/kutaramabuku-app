@@ -14,7 +14,7 @@ export interface ExportOptions {
 }
 
 interface ParsedElement {
-  type: 'paragraph' | 'heading1' | 'heading2' | 'heading3' | 'list-item' | 'ordered-item' | 'image';
+  type: 'paragraph' | 'heading1' | 'heading2' | 'heading3' | 'list-item' | 'ordered-item' | 'image' | 'page-break';
   runs: ParsedRun[];
   align?: 'left' | 'center' | 'right' | 'justify';
   listLevel?: number;
@@ -91,6 +91,15 @@ function parseHtmlContent(html: string): ParsedElement[] {
   
   function processElement(el: Element, listLevel = 0) {
     const tagName = el.tagName.toLowerCase();
+    const htmlEl = el as HTMLElement;
+
+    if (htmlEl.dataset?.pageBreak === 'chapter') {
+      elements.push({
+        type: 'page-break',
+        runs: [],
+      });
+      return;
+    }
     
     // Handle images
     if (tagName === 'img') {
@@ -557,6 +566,12 @@ export async function exportToDOCX(options: ExportOptions): Promise<void> {
   let listCounter = 0;
   
   for (const element of parsedContent) {
+    if (element.type === 'page-break') {
+      contentChildren.push(new Paragraph({ children: [new PageBreak()] }));
+      listCounter = 0;
+      continue;
+    }
+
     // Handle images
     if (element.type === 'image' && element.imageSrc) {
       const imageResult = await fetchImageAsArrayBuffer(element.imageSrc);
@@ -823,6 +838,13 @@ export async function exportToPDF(options: ExportOptions): Promise<void> {
   let listCounter = 0;
   
   for (const element of parsedContent) {
+    if (element.type === 'page-break') {
+      pdf.addPage();
+      yPos = margin;
+      listCounter = 0;
+      continue;
+    }
+
     if (yPos > maxY - 40) {
       pdf.addPage();
       yPos = margin;

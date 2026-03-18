@@ -1,6 +1,7 @@
-import React from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { EditorContent as TipTapEditorContent, Editor } from '@tiptap/react';
-import { Loader2, Check } from 'lucide-react';
+import { Loader2, Check, ZoomIn, ZoomOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface EditorContentProps {
   editor: Editor | null;
@@ -26,6 +27,31 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
   activeChapterTitle,
   isSaving,
 }) => {
+  const [zoom, setZoom] = useState(1);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const zoomPercent = Math.round(zoom * 100);
+
+  const applyZoom = (next: number) => {
+    const clamped = Math.max(0.6, Math.min(1.8, next));
+    setZoom(clamped);
+  };
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const step = event.deltaY < 0 ? 0.05 : -0.05;
+      applyZoom(zoom + step);
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, [zoom]);
+
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -45,7 +71,7 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
         <h2 className="text-2xl font-bold">{activeChapterTitle || 'Sem titulo'}</h2>
         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
           <span>{wordCount} palavras</span>
-          <span>�</span>
+          <span>•</span>
           <span>{charCount} caracteres</span>
           <span className="ml-auto flex items-center gap-1">
             {isSaving ? (
@@ -60,12 +86,55 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
               </>
             )}
           </span>
+          <div className="flex items-center gap-1 ml-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => applyZoom(zoom - 0.1)}
+              title="Zoom out"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-xs min-w-[56px]"
+              onClick={() => setZoom(1)}
+              title="Reset zoom"
+            >
+              {zoomPercent}%
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => applyZoom(zoom + 0.1)}
+              title="Zoom in"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-8 bg-muted/30">
-        <div className="a4-page mx-auto bg-background shadow-lg rounded-sm">
-          <TipTapEditorContent editor={editor} className="page-content" />
+      <div ref={scrollRef} className="flex-1 overflow-auto p-8 bg-muted/30">
+        <div className="min-w-max pb-8">
+          <div
+            className="mx-auto"
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top center',
+              width: '8.5in',
+            }}
+          >
+            <div className="a4-page bg-background shadow-lg rounded-sm">
+              <TipTapEditorContent editor={editor} className="page-content" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
