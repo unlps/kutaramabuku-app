@@ -126,8 +126,7 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
           <div
             className="mx-auto"
             style={{
-              transform: `scale(${zoom})`,
-              transformOrigin: 'top center',
+              zoom,
               width: '8.5in',
             }}
           >

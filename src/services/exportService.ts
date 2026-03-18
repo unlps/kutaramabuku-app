@@ -971,19 +971,18 @@ export async function exportToPDF(options: ExportOptions): Promise<void> {
     
     pdf.setFontSize(fontSize);
     
-    // Determine font style - only apply bold for headings, otherwise use run styles
+    // Determine font style - apply if any run has the style (closer to editor visual result)
     if (isHeading) {
       pdf.setFont('helvetica', 'bold');
     } else {
-      // For non-headings, check if ALL runs are bold (not just some)
-      const allBold = element.runs.length > 0 && element.runs.every(r => r.bold);
-      const allItalic = element.runs.length > 0 && element.runs.every(r => r.italic);
+      const anyBold = element.runs.some(r => r.bold);
+      const anyItalic = element.runs.some(r => r.italic);
       
-      if (allBold && allItalic) {
+      if (anyBold && anyItalic) {
         pdf.setFont('helvetica', 'bolditalic');
-      } else if (allBold) {
+      } else if (anyBold) {
         pdf.setFont('helvetica', 'bold');
-      } else if (allItalic) {
+      } else if (anyItalic) {
         pdf.setFont('helvetica', 'italic');
       } else {
         pdf.setFont('helvetica', 'normal');
@@ -991,6 +990,7 @@ export async function exportToPDF(options: ExportOptions): Promise<void> {
     }
     
     const lines = pdf.splitTextToSize(fullText, effectiveWidth);
+    const hasUnderline = !isHeading && element.runs.some(r => r.underline);
     
     for (const line of lines) {
       if (yPos > maxY) {
@@ -999,6 +999,18 @@ export async function exportToPDF(options: ExportOptions): Promise<void> {
       }
       
       pdf.text(line, textX, yPos, { align });
+
+      // jsPDF has limited underline support; draw manual underline for styled paragraphs.
+      if (hasUnderline) {
+        const lineWidth = pdf.getTextWidth(line);
+        let startX = textX;
+        if (align === 'center') startX = textX - (lineWidth / 2);
+        if (align === 'right') startX = textX - lineWidth;
+        const underlineY = yPos + 2;
+        pdf.setLineWidth(0.6);
+        pdf.line(startX, underlineY, startX + lineWidth, underlineY);
+      }
+
       yPos += lineHeight;
     }
     
