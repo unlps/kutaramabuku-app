@@ -387,7 +387,7 @@ export default function Editor() {
         </Button>
         <Button variant="outline" size="sm" className="h-8" onClick={() => setStep("template")}>
           <Palette className="h-3.5 w-3.5 mr-1.5" />
-          Template: {coverTemplate.charAt(0).toUpperCase() + coverTemplate.slice(1)}
+          Editar Template: {coverTemplate !== "none" ? coverTemplate : "Nenhum"}
         </Button>
         <span className="text-xs text-muted-foreground">
           {editorState.chapters.length} capítulo{editorState.chapters.length !== 1 ? 's' : ''}
