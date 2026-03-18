@@ -197,27 +197,9 @@ All colors MUST be HSL.
   hyphens: auto;
 }
 
-.editor-page-surface {
-  min-height: 11in;
-  padding: 1in;
-  background-color: transparent;
-  background-image: repeating-linear-gradient(
-    to right,
-    #ffffff 0,
-    #ffffff 8.5in,
-    transparent 8.5in,
-    transparent calc(8.5in + 32px)
-  );
-  background-size: calc(8.5in + 32px) 100%;
-}
-
 .editor-paginated-content .ProseMirror {
   min-height: 9in;
-  height: 9in;
   outline: none;
-  column-width: 6.5in;
-  column-gap: 2in;
-  column-fill: auto;
 }
 
 /* Image handling in editor and preview */

@@ -10,7 +10,6 @@ interface EditorContentProps {
 }
 
 const PAGE_WIDTH_PX = 816;
-const PAGE_GAP_PX = 32;
 
 const getWordCount = (html: string): number => {
   const div = document.createElement('div');
@@ -34,9 +33,6 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const zoomPercent = Math.round(zoom * 100);
-
-  const pagesVisible = zoomPercent < 50 ? 3 : zoomPercent < 70 ? 2 : 1;
-  const surfaceWidth = pagesVisible * PAGE_WIDTH_PX + (pagesVisible - 1) * PAGE_GAP_PX;
 
   const applyZoom = (next: number) => {
     const clamped = Math.max(0.3, Math.min(2, next));
@@ -132,9 +128,16 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto p-8 bg-muted/30">
-        <div className="min-w-max pb-8">
-          <div className="mx-auto" style={{ zoom }}>
-            <div className="editor-page-surface" style={{ width: `${surfaceWidth}px` }}>
+        <div className="pb-8">
+          <div className="mx-auto" style={{ width: `${PAGE_WIDTH_PX * zoom}px` }}>
+            <div
+              className="a4-page bg-background shadow-lg rounded-sm"
+              style={{
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top left',
+                marginBottom: `${Math.max(32, 32 * zoom)}px`,
+              }}
+            >
               <TipTapEditorContent editor={editor} className="page-content editor-paginated-content" />
             </div>
           </div>
