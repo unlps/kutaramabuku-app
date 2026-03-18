@@ -179,9 +179,9 @@ const ReviewerDashboard = () => {
       <div className="space-y-6 max-w-6xl mx-auto">
         {/* ── Top Row: Profile Card + Welcome Banner ── */}
         <div>
-          <h2 className="text-2xl font-bold mb-1">Painel de Revisão</h2>
+          <h2 className="text-2xl font-bold mb-1">Dashboard</h2>
           <p className="text-sm text-muted-foreground">
-            Início / Painel ValidaMabuku
+            Início / Dashboard ValidaMabuku
           </p>
         </div>
 
