@@ -302,13 +302,12 @@ const ReviewerProfile = () => {
                 {avatarUrl && (
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="text-xs h-7 px-3 text-destructive hover:text-destructive"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
                     onClick={handleAvatarRemove}
                     disabled={uploadingAvatar}
                   >
-                    <Trash2 className="h-3 w-3 mr-1.5" />
-                    Remover
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>

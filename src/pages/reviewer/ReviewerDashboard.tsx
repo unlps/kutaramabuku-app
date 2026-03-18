@@ -239,11 +239,10 @@ const ReviewerDashboard = () => {
             {/* Quick links */}
             <div className="mt-5 pt-5 border-t border-border space-y-2">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                Atalhos
+                Atalho
               </p>
               {[
-                { label: "Fila de Revisão", path: "/reviewer/queue", icon: BookCheck },
-                { label: "Meu Perfil", path: "/reviewer/profile", icon: Shield },
+                { label: "Convidar mais Reviewers", path: "/reviewer/admin/invites", icon: BookCheck },
               ].map((link) => (
                 <button
                   key={link.path}
@@ -256,36 +255,51 @@ const ReviewerDashboard = () => {
               ))}
             </div>
           </Card>
-
           {/* Welcome Banner */}
-          <Card className="lg:col-span-2 p-0 overflow-hidden border relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
-            <div className="relative p-8 flex flex-col justify-between h-full">
-              <div>
-                <p className="text-2xl font-bold leading-snug">
-                  Olá, {reviewerProfile?.full_name?.split(" ")[0]}
+          <Card className="lg:col-span-2 p-0 overflow-hidden border relative min-h-[260px] bg-gradient-to-b from-[#0a1628] via-[#162d4a] to-[#3b82a0] text-white shadow-xl dark:border-white/10">
+            {/* Background Logo */}
+            <img
+              src={logo}
+              alt=""
+              className="absolute -right-40 top-1/2 -translate-y-1/2 w-[900px] h-[900px] object-contain opacity-15 dark:opacity-25 pointer-events-none rotate-12"
+            />
+            {/* Soft glow behind text */}
+            <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-emerald-500/15 to-transparent pointer-events-none" />
+
+            <div className="relative p-8 h-full flex flex-col justify-between z-10">
+              <div className="max-w-xl">
+                <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-4 leading-tight">
+                  Validar livros nunca foi tão fácil.
+                </h2>
+                <p className="text-emerald-400 font-semibold text-base sm:text-lg mb-2">
+                  No ValidaMabuku valide obras de vários autores do KutaraMabuku em poucos cliques.
                 </p>
-                <p className="text-muted-foreground mt-2 text-sm max-w-md">
-                  Gere e valide as submissões de livros. O teu papel é fundamental para garantir a
+                <p className="text-white/70 text-sm leading-relaxed max-w-lg mb-8">
+                  Gerir e validar as submissões de livros. O teu papel é fundamental para garantir a
                   qualidade do catálogo Kutara Mabuku.
                 </p>
               </div>
 
-              {/* Urgent alert inside banner */}
+              {/* Action area */}
+              <div className="flex items-center">
+                <button
+                  onClick={() => navigate("/reviewer/queue")}
+                  className="flex items-center gap-2 text-sm font-bold text-white/90 hover:text-emerald-400 transition-colors group"
+                >
+                  <BookCheck className="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>Ir para fila de revisão <span className="text-white/50 font-normal"></span></span>
+                </button>
+              </div>
+
+              {/* Urgent alert in corner */}
               {urgentCount > 0 && (
-                <div className="mt-6 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 animate-pulse" />
-                  <p className="text-sm flex-1">
-                    <strong>{urgentCount}</strong> livro{urgentCount > 1 ? "s" : ""} há mais de 3 dias sem revisão
+                <div className="absolute top-6 right-6 flex items-center gap-2 bg-amber-500/20 backdrop-blur-md text-amber-300 border border-amber-500/30 rounded-full px-4 py-1.5 shadow-lg cursor-pointer hover:bg-amber-500/30 transition-colors"
+                  onClick={() => navigate("/reviewer/queue")}
+                >
+                  <AlertTriangle className="h-4 w-4 animate-pulse" />
+                  <p className="text-xs font-semibold">
+                    {urgentCount} urgente{urgentCount > 1 ? "s" : ""} na fila
                   </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
-                    onClick={() => navigate("/reviewer/queue")}
-                  >
-                    Ver Fila
-                  </Button>
                 </div>
               )}
             </div>
