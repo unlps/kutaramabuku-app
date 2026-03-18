@@ -70,7 +70,6 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="sticky top-0 z-20 px-6 py-2 border-b bg-card/95 backdrop-blur-sm">
-        <h2 className="text-xl font-bold">{activeChapterTitle || 'Sem titulo'}</h2>
         <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
           <span>{wordCount} palavras</span>
           <span>•</span>
