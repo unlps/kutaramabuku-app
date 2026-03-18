@@ -20,7 +20,7 @@ const RobustEditor: React.FC<RobustEditorProps> = ({ ebookId }) => {
     isSaving,
     isLoading,
     selectChapter,
-    updateChapterTitle,
+    updateChapterTitleById,
     addChapter,
     deleteChapter,
     reorderChapters,
@@ -53,6 +53,7 @@ const RobustEditor: React.FC<RobustEditorProps> = ({ ebookId }) => {
           onReorder={reorderChapters}
           onAdd={addChapter}
           onDelete={deleteChapter}
+          onRename={updateChapterTitleById}
         />
       </div>
 
@@ -85,7 +86,6 @@ const RobustEditor: React.FC<RobustEditorProps> = ({ ebookId }) => {
             <EditorContentComponent
               editor={editor}
               activeChapterTitle={activeChapter.title}
-              onTitleChange={updateChapterTitle}
               isSaving={isSaving}
             />
           ) : (

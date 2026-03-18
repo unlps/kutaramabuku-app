@@ -186,6 +186,31 @@ export const useRobustEditor = (ebookId: string) => {
     [activeChapterId, toast]
   );
 
+  // Update chapter title by id (used by sidebar inline rename)
+  const updateChapterTitleById = useCallback(
+    async (id: string, title: string) => {
+      const trimmed = title.trim();
+      if (!trimmed) return;
+
+      setChapters((prev) => prev.map((ch) => (ch.id === id ? { ...ch, title: trimmed } : ch)));
+
+      try {
+        const { error } = await supabase
+          .from('chapters')
+          .update({ title: trimmed, updated_at: new Date().toISOString() })
+          .eq('id', id);
+
+        if (error) throw error;
+      } catch (error) {
+        toast({
+          title: 'Erro ao atualizar título',
+          variant: 'destructive',
+        });
+      }
+    },
+    [toast]
+  );
+
   // Add new chapter
   const addChapter = useCallback(async () => {
     try {
@@ -288,6 +313,7 @@ export const useRobustEditor = (ebookId: string) => {
     isLoading,
     selectChapter,
     updateChapterTitle,
+    updateChapterTitleById,
     addChapter,
     deleteChapter,
     reorderChapters,
