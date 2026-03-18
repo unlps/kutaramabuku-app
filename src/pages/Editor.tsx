@@ -358,7 +358,7 @@ export default function Editor() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
       <div 
         className="export-cover-container"
         style={{ position: 'absolute', left: '-9999px', top: 0, width: '8.5in', height: '11in', overflow: 'hidden', backgroundColor: '#ffffff' }}
@@ -396,12 +396,14 @@ export default function Editor() {
 
       <div className="flex-1 overflow-hidden">
         {isPreviewMode ? (
-          <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <EditorPreview title={ebook.title} author={ebook.author} genre={ebook.genre} coverImage={coverImage} coverTemplate={coverTemplate} chapters={editorState.chapters} />
-          </Suspense>
+          <div className="h-full overflow-hidden">
+            <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              <EditorPreview title={ebook.title} author={ebook.author} genre={ebook.genre} coverImage={coverImage} coverTemplate={coverTemplate} chapters={editorState.chapters} />
+            </Suspense>
+          </div>
         ) : (
           <div className="h-full">
-            <RobustEditor ebookId={ebook.id} />
+            <RobustEditor editorState={editorState} />
           </div>
         )}
       </div>

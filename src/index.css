@@ -158,7 +158,9 @@ All colors MUST be HSL.
   align-items: center;
   padding: 2rem;
   background: hsl(var(--muted) / 0.3);
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .a4-page {

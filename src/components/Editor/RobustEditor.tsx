@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
-import { useRobustEditor } from '@/hooks/useRobustEditor';
 import EditorToolbar from './EditorToolbar';
 import EditorContentComponent from './EditorContent';
 import ChapterSidebar from './ChapterSidebar';
 import { PanelLeftClose, PanelLeftOpen, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Chapter } from '@/types/editor';
+import { Editor } from '@tiptap/react';
 
 interface RobustEditorProps {
-  ebookId: string;
+  editorState: {
+    editor: Editor | null;
+    chapters: Chapter[];
+    activeChapter: Chapter | null;
+    activeChapterId: string | null;
+    isSaving: boolean;
+    isLoading: boolean;
+    selectChapter: (id: string) => void;
+    updateChapterTitleById: (id: string, title: string) => void;
+    addChapter: () => void;
+    deleteChapter: (id: string) => void;
+    reorderChapters: (chapters: Chapter[]) => void;
+  };
 }
 
-const RobustEditor: React.FC<RobustEditorProps> = ({ ebookId }) => {
+const RobustEditor: React.FC<RobustEditorProps> = ({ editorState }) => {
   const {
     editor,
     chapters,
@@ -24,7 +37,7 @@ const RobustEditor: React.FC<RobustEditorProps> = ({ ebookId }) => {
     addChapter,
     deleteChapter,
     reorderChapters,
-  } = useRobustEditor(ebookId);
+  } = editorState;
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
