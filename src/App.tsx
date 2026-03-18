@@ -17,6 +17,15 @@ import BookDetails from "./pages/BookDetails";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 
+// ValidaMabuku — Reviewer Dashboard Pages
+import ReviewerAuth from "./pages/reviewer/ReviewerAuth";
+import ReviewerInvite from "./pages/reviewer/ReviewerInvite";
+import ReviewerDashboard from "./pages/reviewer/ReviewerDashboard";
+import ReviewerQueue from "./pages/reviewer/ReviewerQueue";
+import ReviewerBookDetail from "./pages/reviewer/ReviewerBookDetail";
+import ReviewerProfile from "./pages/reviewer/ReviewerProfile";
+import ReviewerInviteAdmin from "./pages/reviewer/ReviewerInviteAdmin";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -39,6 +48,16 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/my-books" element={<MyBooks />} />
             <Route path="/book/:id" element={<BookDetails />} />
+
+            {/* ValidaMabuku — Reviewer Dashboard */}
+            <Route path="/reviewer/auth" element={<ReviewerAuth />} />
+            <Route path="/reviewer/invite" element={<ReviewerInvite />} />
+            <Route path="/reviewer/dashboard" element={<ReviewerDashboard />} />
+            <Route path="/reviewer/queue" element={<ReviewerQueue />} />
+            <Route path="/reviewer/book/:id" element={<ReviewerBookDetail />} />
+            <Route path="/reviewer/profile" element={<ReviewerProfile />} />
+            <Route path="/reviewer/admin/invites" element={<ReviewerInviteAdmin />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

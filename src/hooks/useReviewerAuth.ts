@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { reviewerTable } from "@/integrations/supabase/reviewer-client";
 import type { ReviewerProfile } from "@/types/reviewer-types";
 
 interface UseReviewerAuthReturn {
@@ -31,8 +32,7 @@ export const useReviewerAuth = (redirectOnFail = true): UseReviewerAuthReturn =>
         setUserId(session.user.id);
 
         // Check if user has a reviewer profile
-        const { data: profile, error } = await supabase
-          .from("reviewer_profiles")
+        const { data: profile, error } = await reviewerTable("reviewer_profiles")
           .select("*")
           .eq("id", session.user.id)
           .single();

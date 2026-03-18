@@ -7,13 +7,13 @@ import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard,
   BookCheck,
-  History,
   UserCircle,
   LogOut,
   Menu,
   X,
   Shield,
   ChevronRight,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoLight from "@/assets/validamabuku-logo-light.png";
@@ -23,10 +23,14 @@ interface ReviewerLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+const baseNavItems = [
   { path: "/reviewer/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/reviewer/queue", label: "Fila de Revisão", icon: BookCheck },
   { path: "/reviewer/profile", label: "Meu Perfil", icon: UserCircle },
+];
+
+const adminNavItems = [
+  { path: "/reviewer/admin/invites", label: "Gerir Convites", icon: UserPlus },
 ];
 
 const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
@@ -114,7 +118,7 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
+          {baseNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
@@ -140,7 +144,44 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
               </button>
             );
           })}
+
+          {/* Admin-only nav items */}
+          {(reviewerProfile?.role === "admin" || reviewerProfile?.role === "senior_reviewer") && (
+            <>
+              <div className="pt-3 pb-1 px-4">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Administração</p>
+              </div>
+              {adminNavItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      navigate(item.path);
+                      setSidebarOpen(false);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                      transition-all duration-200 group
+                      ${
+                        isActive
+                          ? "bg-primary/10 text-primary shadow-sm"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }
+                    `}
+                  >
+                    <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
+                    {item.label}
+                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </nav>
+
+
 
         {/* User Info */}
         <div className="p-4 border-t border-border space-y-3">
