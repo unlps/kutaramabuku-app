@@ -35,7 +35,7 @@ export default function Editor() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [coverTemplate, setCoverTemplate] = useState<CoverTemplate>('none');
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [step, setStep] = useState<EditorStep>('editor');
+  const [step, setStep] = useState<EditorStep>('metadata');
 
   const editorState = useRobustEditor(ebookId || '');
 
@@ -135,11 +135,11 @@ export default function Editor() {
       // Update local state
       setEbook({ ...updatedEbook, cover_image: newCoverUrl });
       setCoverImage(newCoverUrl);
-      setStep('editor');
+      setStep('template');
 
       toast({
         title: "InformaÃ§Ãµes atualizadas!",
-        description: "Dados atualizados com sucesso.",
+        description: "Agora escolha o template da capa.",
       });
     } catch (error: unknown) {
       toast({
@@ -247,7 +247,7 @@ export default function Editor() {
       <EbookMetadataForm
         ebook={ebook}
         onContinue={handleMetadataContinue}
-        onBack={() => setStep("editor")}
+        onBack={() => navigate("/dashboard")}
       />
     );
   }
