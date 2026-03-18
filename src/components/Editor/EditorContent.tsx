@@ -127,18 +127,11 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-auto p-8 bg-muted/30">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-auto p-8 bg-muted/30">
         <div className="pb-8">
           <div className="mx-auto" style={{ width: `${PAGE_WIDTH_PX * zoom}px` }}>
-            <div
-              className="a4-page bg-background shadow-lg rounded-sm"
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: 'top left',
-                marginBottom: `${Math.max(32, 32 * zoom)}px`,
-              }}
-            >
-              <TipTapEditorContent editor={editor} className="page-content editor-paginated-content" />
+            <div style={{ zoom }}>
+              <TipTapEditorContent editor={editor} className="a4-page page-content editor-paginated-content bg-background shadow-lg rounded-sm" />
             </div>
           </div>
         </div>

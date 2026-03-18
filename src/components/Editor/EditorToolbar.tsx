@@ -95,8 +95,8 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
   return (
     <div className="border-b bg-card px-3 py-2">
       <div className="flex flex-wrap items-start gap-3">
-        <div className="rounded-lg border bg-background min-w-[420px] h-[92px] flex flex-col justify-between">
-          <div className="p-2 flex flex-wrap items-center gap-2">
+        <div className="rounded-lg border bg-background min-w-[420px] h-[78px] flex flex-col justify-between">
+          <div className="px-2 pt-2 flex flex-wrap items-center gap-2">
             <select
               value={currentFont}
               onChange={(e) => setFontFamily(e.target.value)}
@@ -147,13 +147,13 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
 
             <ToolbarButton onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Limpar formatacao"><Eraser className="h-4 w-4" /></ToolbarButton>
           </div>
-          <div className="border-t px-2 py-1">
-            <p className="text-[11px] text-muted-foreground text-center leading-none">Fonte</p>
+          <div className="px-2 pb-1">
+            <p className="text-[10px] text-muted-foreground text-center leading-none">Fonte</p>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-background min-w-[340px] h-[92px] flex flex-col justify-between">
-          <div className="p-2 flex flex-wrap items-center gap-1">
+        <div className="rounded-lg border bg-background min-w-[340px] h-[78px] flex flex-col justify-between">
+          <div className="px-2 pt-2 flex flex-wrap items-center gap-1">
             <ToolbarButton onClick={() => editor.chain().focus().setParagraph().run()} isActive={editor.isActive('paragraph')} title="Paragrafo"><Pilcrow className="h-4 w-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Bullets"><List className="h-4 w-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Numeracao"><ListOrdered className="h-4 w-4" /></ToolbarButton>
@@ -167,8 +167,8 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
             <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} title="Alinhar direita"><AlignRight className="h-4 w-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('justify').run()} isActive={editor.isActive({ textAlign: 'justify' })} title="Justificar"><AlignJustify className="h-4 w-4" /></ToolbarButton>
           </div>
-          <div className="border-t px-2 py-1">
-            <p className="text-[11px] text-muted-foreground text-center leading-none">Paragrafo</p>
+          <div className="px-2 pb-1">
+            <p className="text-[10px] text-muted-foreground text-center leading-none">Paragrafo</p>
           </div>
         </div>
       </div>
