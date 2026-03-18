@@ -209,15 +209,15 @@ const ReviewerProfile = () => {
     reviewerProfile?.role === "admin"
       ? "bg-red-500/10 text-red-500 border-red-500/20"
       : reviewerProfile?.role === "senior_reviewer"
-      ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+        : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
 
   const roleLabel =
     reviewerProfile?.role === "admin"
       ? "Administrador"
       : reviewerProfile?.role === "senior_reviewer"
-      ? "Reviewer Sénior"
-      : "Reviewer";
+        ? "Reviewer Sénior"
+        : "Reviewer";
 
   const initials = reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R";
 
@@ -236,7 +236,7 @@ const ReviewerProfile = () => {
           <div className="flex items-center gap-5">
             {/* Avatar */}
             <div className="relative group">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-primary flex items-center justify-center text-white font-bold text-2xl shadow-glow">
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-white font-bold text-2xl shadow-glow">
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
@@ -249,7 +249,7 @@ const ReviewerProfile = () => {
               </div>
               {/* Hover overlay */}
               <div
-                className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadingAvatar ? (
@@ -280,11 +280,6 @@ const ReviewerProfile = () => {
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs text-muted-foreground">
-                  Desde{" "}
-                  {new Date(reviewerProfile?.created_at || "").toLocaleDateString("pt-PT", {
-                    month: "long",
-                    year: "numeric",
-                  })}
                 </span>
               </div>
 

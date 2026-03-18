@@ -163,14 +163,14 @@ const ReviewerDashboard = () => {
     reviewerProfile?.role === "admin"
       ? "bg-red-500/10 text-red-500 border-red-500/20"
       : reviewerProfile?.role === "senior_reviewer"
-      ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+        : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
   const roleLabel =
     reviewerProfile?.role === "admin"
       ? "Admin"
       : reviewerProfile?.role === "senior_reviewer"
-      ? "Senior Reviewer"
-      : "Reviewer";
+        ? "Senior Reviewer"
+        : "Reviewer";
 
   const total = stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount;
 
@@ -262,15 +262,6 @@ const ReviewerDashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
             <div className="relative p-8 flex flex-col justify-between h-full">
               <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Bem-vindo ao</p>
-                    <h3 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      ValidaMabuku
-                    </h3>
-                  </div>
-                </div>
                 <p className="text-2xl font-bold leading-snug">
                   Olá, {reviewerProfile?.full_name?.split(" ")[0]}
                 </p>
