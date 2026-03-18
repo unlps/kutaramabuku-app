@@ -9,6 +9,9 @@ interface EditorContentProps {
   isSaving: boolean;
 }
 
+const PAGE_WIDTH_PX = 816;
+const PAGE_GAP_PX = 32;
+
 const getWordCount = (html: string): number => {
   const div = document.createElement('div');
   div.innerHTML = html;
@@ -32,8 +35,11 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
 
   const zoomPercent = Math.round(zoom * 100);
 
+  const pagesVisible = zoomPercent < 50 ? 3 : zoomPercent < 70 ? 2 : 1;
+  const surfaceWidth = pagesVisible * PAGE_WIDTH_PX + (pagesVisible - 1) * PAGE_GAP_PX;
+
   const applyZoom = (next: number) => {
-    const clamped = Math.max(0.6, Math.min(1.8, next));
+    const clamped = Math.max(0.3, Math.min(2, next));
     setZoom(clamped);
   };
 
@@ -73,65 +79,63 @@ const EditorContentComponent: React.FC<EditorContentProps> = ({
           <span>{wordCount} palavras</span>
           <span>•</span>
           <span>{charCount} caracteres</span>
-          <span className="ml-auto flex items-center gap-1">
-            {isSaving ? (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Check className="h-3 w-3 text-emerald-600" />
-                Salvo
-              </>
-            )}
-          </span>
-          <div className="flex items-center gap-1 ml-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => applyZoom(zoom - 0.1)}
-              title="Zoom out"
-            >
-              <ZoomOut className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs min-w-[56px]"
-              onClick={() => setZoom(1)}
-              title="Reset zoom"
-            >
-              {zoomPercent}%
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => applyZoom(zoom + 0.1)}
-              title="Zoom in"
-            >
-              <ZoomIn className="h-3.5 w-3.5" />
-            </Button>
+
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <span className="flex items-center gap-1">
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Check className="h-3 w-3 text-emerald-600" />
+                  Salvo
+                </>
+              )}
+            </span>
+
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => applyZoom(zoom - 0.1)}
+                title="Zoom out"
+              >
+                <ZoomOut className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs min-w-[56px]"
+                onClick={() => setZoom(1)}
+                title="Reset zoom"
+              >
+                {zoomPercent}%
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => applyZoom(zoom + 0.1)}
+                title="Zoom in"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto p-8 bg-muted/30">
         <div className="min-w-max pb-8">
-          <div
-            className="mx-auto"
-            style={{
-              zoom,
-              width: '8.5in',
-            }}
-          >
-            <div className="a4-page bg-background shadow-lg rounded-sm">
-              <TipTapEditorContent editor={editor} className="page-content" />
+          <div className="mx-auto" style={{ zoom }}>
+            <div className="editor-page-surface" style={{ width: `${surfaceWidth}px` }}>
+              <TipTapEditorContent editor={editor} className="page-content editor-paginated-content" />
             </div>
           </div>
         </div>
