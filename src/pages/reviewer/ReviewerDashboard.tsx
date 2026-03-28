@@ -237,23 +237,25 @@ const ReviewerDashboard = () => {
             </div>
 
             {/* Quick links */}
-            <div className="mt-5 pt-5 border-t border-border space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                Atalho
-              </p>
-              {[
-                { label: "Convidar mais Reviewers", path: "/reviewer/admin/invites", icon: BookCheck },
-              ].map((link) => (
-                <button
-                  key={link.path}
-                  onClick={() => navigate(link.path)}
-                  className="w-full flex items-center gap-2 text-sm text-primary hover:underline py-1"
-                >
-                  <link.icon className="h-3.5 w-3.5" />
-                  {link.label}
-                </button>
-              ))}
-            </div>
+            {(reviewerProfile?.role === "admin" || reviewerProfile?.role === "senior_reviewer") && (
+              <div className="mt-5 pt-5 border-t border-border space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                  Atalho
+                </p>
+                {[
+                  { label: "Convidar mais Reviewers", path: "/reviewer/admin/invites", icon: BookCheck },
+                ].map((link) => (
+                  <button
+                    key={link.path}
+                    onClick={() => navigate(link.path)}
+                    className="w-full flex items-center gap-2 text-sm text-primary hover:underline py-1"
+                  >
+                    <link.icon className="h-3.5 w-3.5" />
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </Card>
           {/* Welcome Banner */}
           <Card className="lg:col-span-2 p-0 overflow-hidden border relative min-h-[260px] bg-gradient-to-b from-[#0a1628] via-[#162d4a] to-[#3b82a0] text-white shadow-xl dark:border-white/10">
