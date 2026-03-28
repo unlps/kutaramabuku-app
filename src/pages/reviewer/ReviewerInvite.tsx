@@ -84,7 +84,7 @@ const ReviewerInvite = () => {
     setLoading(true);
 
     try {
-      // Step 1: Create auth account
+      // Step 1: Create the auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -95,31 +95,36 @@ const ReviewerInvite = () => {
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error("Erro ao criar conta. Tente novamente.");
 
-      if (!authData.user) {
-        throw new Error("Erro ao criar conta. Tente novamente.");
+      // Step 2: If email confirmation is required, sign in immediately to get a session
+      // so the RPC can access auth.uid()
+      let session = authData.session;
+      if (!session) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        session = signInData.session;
       }
 
-      // Step 2: Create reviewer profile
-      const { data: profile, error: profileError } = await reviewerTable("reviewer_profiles")
-        .insert({
-          id: authData.user.id,
-          full_name: fullName,
-          publisher_name: publisherName || null,
-          phone: phone || null,
-          date_of_birth: dateOfBirth || null,
-        })
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Step 3: Mark invitation as accepted
-      if (token) {
-        await reviewerTable("reviewer_invitations")
-          .update({ status: "accepted" })
-          .eq("token", token);
+      if (!session) {
+        throw new Error("Não foi possível iniciar sessão após o registo. Tente iniciar sessão manualmente.");
       }
+
+      // Step 3: Call the SECURITY DEFINER RPC — creates profile + marks invite accepted atomically
+      const { data: profileRaw, error: rpcError } = await (supabase as any).rpc("register_reviewer_from_invite", {
+        p_token: token,
+        p_full_name: fullName,
+        p_publisher: publisherName || null,
+        p_phone: phone || null,
+        p_dob: dateOfBirth || null,
+      });
+
+      if (rpcError) throw rpcError;
+
+      const profile = profileRaw as { editor_secret_id: string };
 
       setGeneratedSecretId(profile.editor_secret_id);
       setSuccess(true);
