@@ -162,15 +162,11 @@ const ReviewerDashboard = () => {
   const roleBadgeColor =
     reviewerProfile?.role === "admin"
       ? "bg-red-500/10 text-red-500 border-red-500/20"
-      : reviewerProfile?.role === "senior_reviewer"
-        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-        : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
   const roleLabel =
     reviewerProfile?.role === "admin"
       ? "Admin"
-      : reviewerProfile?.role === "senior_reviewer"
-        ? "Senior Reviewer"
-        : "Reviewer";
+      : "Reviewer";
 
   const total = stats.pendingCount + stats.inReviewCount + stats.approvedToday + stats.rejectedCount;
 
@@ -237,7 +233,7 @@ const ReviewerDashboard = () => {
             </div>
 
             {/* Quick links */}
-            {(reviewerProfile?.role === "admin" || reviewerProfile?.role === "senior_reviewer") && (
+            {reviewerProfile?.role === "admin" && (
               <div className="mt-5 pt-5 border-t border-border space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                   Atalho

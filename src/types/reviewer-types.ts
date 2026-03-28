@@ -1,7 +1,7 @@
 // ValidaMabuku — Reviewer Dashboard Types
 // Local TypeScript types mirroring the Supabase tables
 
-export type ReviewerRole = 'reviewer' | 'senior_reviewer' | 'admin';
+export type ReviewerRole = 'reviewer' | 'admin';
 export type ReviewerStatus = 'active' | 'suspended' | 'inactive';
 export type SubmissionStatus = 'pending_review' | 'in_review' | 'approved' | 'rejected' | 'revision_requested';
 export type InvitationStatus = 'pending' | 'accepted' | 'expired';

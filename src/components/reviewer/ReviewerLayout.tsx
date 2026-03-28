@@ -85,7 +85,7 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
   }
 
   const logo = theme === "dark" ? logoDark : logoLight;
-  const isAdmin = reviewerProfile?.role === "admin" || reviewerProfile?.role === "senior_reviewer";
+  const isAdmin = reviewerProfile?.role === "admin";
   const allNavItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
   const lang = languages.find((l) => l.code === currentLang) || languages[0];
 

@@ -208,16 +208,12 @@ const ReviewerProfile = () => {
   const roleBadgeColor =
     reviewerProfile?.role === "admin"
       ? "bg-red-500/10 text-red-500 border-red-500/20"
-      : reviewerProfile?.role === "senior_reviewer"
-        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-        : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+      : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
 
   const roleLabel =
     reviewerProfile?.role === "admin"
       ? "Administrador"
-      : reviewerProfile?.role === "senior_reviewer"
-        ? "Reviewer Sénior"
-        : "Reviewer";
+      : "Reviewer";
 
   const initials = reviewerProfile?.full_name?.charAt(0)?.toUpperCase() || "R";
 

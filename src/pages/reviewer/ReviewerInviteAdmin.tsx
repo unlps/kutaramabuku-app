@@ -52,8 +52,8 @@ const ReviewerInviteAdmin = () => {
 
   useEffect(() => {
     if (!isLoading && reviewerProfile) {
-      // Only allow admin / senior_reviewer
-      if (reviewerProfile.role !== "admin" && reviewerProfile.role !== "senior_reviewer") {
+      // Only allow admin
+      if (reviewerProfile.role !== "admin") {
         toast({
           title: "Acesso negado",
           description: "Apenas administradores podem gerir convites.",
@@ -244,7 +244,7 @@ const ReviewerInviteAdmin = () => {
   if (isLoading) return null;
 
   // Access guard
-  if (reviewerProfile?.role !== "admin" && reviewerProfile?.role !== "senior_reviewer") {
+  if (reviewerProfile?.role !== "admin") {
     return (
       <ReviewerLayout>
         <div className="flex flex-col items-center justify-center h-64 text-center">
