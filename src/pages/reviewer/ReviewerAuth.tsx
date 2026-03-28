@@ -121,9 +121,9 @@ const ReviewerAuth = () => {
       <div className="w-full max-w-md relative z-10">
         <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-glow p-8 space-y-6 border border-border/50">
           {/* Logo & Title */}
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-2">
             <div className="relative inline-block">
-              <img src={logo} alt="ValidaMabuku" className="w-20 h-20 mx-auto rounded-2xl object-contain object-center" />
+              <img src={logo} alt="ValidaMabuku" className="w-24 h-24 mx-auto rounded-2xl object-contain object-center" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
