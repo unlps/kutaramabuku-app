@@ -43,6 +43,8 @@ const ReviewerInviteAdmin = () => {
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [extendingId, setExtendingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const appUrl =
     (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") ||
@@ -149,6 +151,7 @@ const ReviewerInviteAdmin = () => {
   };
 
   const handleDeleteInvitation = async (id: string) => {
+    setDeletingId(id);
     try {
       const { error } = await reviewerTable("reviewer_invitations")
         .delete()
@@ -164,6 +167,43 @@ const ReviewerInviteAdmin = () => {
         description: "Não foi possível remover o convite.",
         variant: "destructive",
       });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleExtendInvitation = async (invitation: ReviewerInvitation) => {
+    setExtendingId(invitation.id);
+    try {
+      const newExpiry = new Date();
+      newExpiry.setDate(newExpiry.getDate() + 7);
+
+      const { data, error } = await reviewerTable("reviewer_invitations")
+        .update({
+          expires_at: newExpiry.toISOString(),
+          status: "pending",
+        })
+        .eq("id", invitation.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setInvitations((prev) =>
+        prev.map((inv) => (inv.id === invitation.id ? (data as ReviewerInvitation) : inv))
+      );
+      toast({
+        title: "Convite renovado! ✅",
+        description: `O prazo para ${invitation.email} foi extendido por mais 7 dias.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao renovar",
+        description: error.message || "Não foi possível renovar o convite.",
+        variant: "destructive",
+      });
+    } finally {
+      setExtendingId(null);
     }
   };
 
@@ -432,14 +472,35 @@ const ReviewerInviteAdmin = () => {
                             </span>
                           </Button>
                         )}
+                        {isExpired && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-amber-600 border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-600"
+                            onClick={() => handleExtendInvitation(invitation)}
+                            disabled={extendingId === invitation.id}
+                          >
+                            {extendingId === invitation.id ? (
+                              <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                            <span className="ml-1.5 hidden sm:inline">Renovar</span>
+                          </Button>
+                        )}
                         {invitation.status !== "accepted" && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-9 w-9 text-muted-foreground hover:text-destructive"
                             onClick={() => handleDeleteInvitation(invitation.id)}
+                            disabled={deletingId === invitation.id}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deletingId === invitation.id ? (
+                              <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
                       </div>
