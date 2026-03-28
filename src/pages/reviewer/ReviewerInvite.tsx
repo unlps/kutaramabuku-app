@@ -164,7 +164,7 @@ const ReviewerInvite = () => {
         <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-glow p-8 space-y-6 border border-border/50">
           {/* Logo */}
           <div className="text-center space-y-3">
-            <img src={logo} alt="ValidaMabuku" className="w-16 h-16 mx-auto rounded-xl" />
+            <img src={logo} alt="ValidaMabuku" className="w-16 h-16 mx-auto rounded-xl object-contain" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               ValidaMabuku
             </h1>

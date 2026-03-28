@@ -123,10 +123,7 @@ const ReviewerAuth = () => {
           {/* Logo & Title */}
           <div className="text-center space-y-4">
             <div className="relative inline-block">
-              <img src={logo} alt="ValidaMabuku" className="w-20 h-20 mx-auto rounded-2xl" />
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center">
-                <Shield className="h-4 w-4 text-white" />
-              </div>
+              <img src={logo} alt="ValidaMabuku" className="w-20 h-20 mx-auto rounded-2xl object-contain object-center" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">

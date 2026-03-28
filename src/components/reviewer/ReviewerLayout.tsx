@@ -122,7 +122,7 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
 
         {/* Logo */}
         <div className="pt-5 pb-4 flex flex-col items-center border-b border-white/10 w-full">
-          <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg object-cover" />
+          <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg object-contain" />
           <span className="text-[9px] font-bold mt-1.5 text-white/80 tracking-tight leading-none">
             ValidaMabuku
           </span>
@@ -192,7 +192,7 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
 
             {/* Mobile logo */}
             <div className="flex items-center gap-2 lg:hidden">
-              <img src={logo} alt="ValidaMabuku" className="w-6 h-6 rounded-md" />
+              <img src={logo} alt="ValidaMabuku" className="w-6 h-6 rounded-md object-contain" />
               <span className="text-xs font-bold bg-gradient-primary bg-clip-text text-transparent">
                 ValidaMabuku
               </span>
