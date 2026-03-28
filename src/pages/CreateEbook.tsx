@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ const CreateEbook = () => {
     name: string;
   }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>("");
-  const [isFree, setIsFree] = useState<boolean>(true);
+  const [priceType, setPriceType] = useState<"unselected" | "free" | "paid">("unselected");
   const [price, setPrice] = useState<string>("0");
   const navigate = useNavigate();
   const {
@@ -193,7 +193,7 @@ const CreateEbook = () => {
         template_id: selectedTemplate,
         cover_image: coverImageUrl,
         genre: selectedGenre || null,
-        price: isFree ? 0 : parseFloat(price) || 0,
+        price: priceType === "free" ? 0 : parseFloat(price) || 0,
         pages: origin === "import" ? parsedChapters.length : 0,
         is_public: false
       }).select().single();
@@ -352,7 +352,15 @@ const CreateEbook = () => {
       }
     } else if (step === "mapping" && parsedChapters.length > 0) {
       setStep("metadata");
-    } else if (step === "metadata" && title) {
+    } else if (step === "metadata") {
+      if (!title || authors.length === 0 || !description || !selectedGenre || priceType === "unselected") {
+        toast({ title: "Campos obrigatórios", description: "Por favor preencha todos os campos obrigatórios (*) antes de continuar.", variant: "destructive" });
+        return;
+      }
+      if (priceType === "paid" && (!price || parseFloat(price) <= 0)) {
+        toast({ title: "Preço inválido", description: "O preço deve ser maior que zero.", variant: "destructive" });
+        return;
+      }
       setStep("template");
     } else if (step === "template") {
       handleCreateEbook();
@@ -548,7 +556,7 @@ const CreateEbook = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="author">Autores</Label>
+                  <Label htmlFor="author">Autores <span className="text-destructive">*</span></Label>
                   <AuthorInput
                     initialAuthors={authors}
                     onChange={(newAuthors) => setAuthors(newAuthors)}
@@ -556,42 +564,45 @@ const CreateEbook = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
+                  <Label htmlFor="description">Descrição <span className="text-destructive">*</span></Label>
                   <Textarea id="description" placeholder="Descreva seu eBook..." value={description} onChange={e => setDescription(e.target.value)} rows={4} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="genre">Gênero</Label>
-                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                    <SelectTrigger id="genre">
-                      <SelectValue placeholder="Selecione um gênero" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genres.map(genre => <SelectItem key={genre.id} value={genre.name}>
-                          {genre.name}
-                        </SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="genre">Gênero <span className="text-destructive">*</span></Label>
+                    <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                      <SelectTrigger id="genre">
+                        <SelectValue placeholder="Selecione um gênero" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {genres.map(genre => <SelectItem key={genre.id} value={genre.name}>
+                            {genre.name}
+                          </SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="price-type">Tipo de Preço <span className="text-destructive">*</span></Label>
+                    <Select value={priceType} onValueChange={(value: "unselected" | "free" | "paid") => {
+                      setPriceType(value);
+                      if (value === "free") setPrice("0");
+                    }}>
+                      <SelectTrigger id="price-type">
+                        <SelectValue placeholder="Não Selecionado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unselected" disabled>Não Selecionado</SelectItem>
+                        <SelectItem value="free">Grátis</SelectItem>
+                        <SelectItem value="paid">Pago</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="price-type">Tipo de Preço</Label>
-                  <Select value={isFree ? "free" : "paid"} onValueChange={value => {
-                setIsFree(value === "free");
-                if (value === "free") setPrice("0");
-              }}>
-                    <SelectTrigger id="price-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="free">Grátis</SelectItem>
-                      <SelectItem value="paid">Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {!isFree && <div className="space-y-2">
-                    <Label htmlFor="price">Preço (MZN)</Label>
+                {priceType === "paid" && <div className="space-y-2">
+                    <Label htmlFor="price">Preço (MZN) <span className="text-destructive">*</span></Label>
                     <Input id="price" type="number" min="0" step="0.01" placeholder="0.00" value={price} onChange={e => setPrice(e.target.value)} />
                   </div>}
 
@@ -636,7 +647,7 @@ const CreateEbook = () => {
                 <Button variant="outline" onClick={handleBack} className="flex-1">
                   Voltar
                 </Button>
-                <Button onClick={handleNext} disabled={!title} className="flex-1 bg-gradient-primary hover:opacity-90">
+                <Button onClick={handleNext} className="flex-1 bg-gradient-primary hover:opacity-90">
                   Continuar
                 </Button>
               </div>
