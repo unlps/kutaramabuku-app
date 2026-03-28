@@ -123,7 +123,7 @@ const ReviewerLayout = ({ children }: ReviewerLayoutProps) => {
         {/* Logo */}
         <div className="pt-5 pb-4 flex flex-col items-center border-b border-white/10 w-full">
           <img src={logo} alt="ValidaMabuku" className="w-10 h-10 rounded-lg object-contain" />
-          <span className="text-[9px] font-bold mt-1.5 text-white/80 tracking-tight leading-none">
+          <span className="text-[9px] font-bold -mt-1 text-white/80 tracking-tight leading-none">
             ValidaMabuku
           </span>
         </div>

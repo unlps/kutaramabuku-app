@@ -125,7 +125,7 @@ const ReviewerAuth = () => {
             <div className="relative inline-block">
               <img src={logo} alt="ValidaMabuku" className="w-24 h-24 mx-auto rounded-2xl object-contain object-center" />
             </div>
-            <div>
+            <div className="-mt-6">
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 ValidaMabuku
               </h1>
