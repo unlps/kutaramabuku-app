@@ -6,29 +6,40 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+// Always return HTTP 200 — put the error in the body so the client can show a real message
+const ok = (data: object) =>
+  new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+const fail = (error: string) =>
+  new Response(JSON.stringify({ success: false, error }), {
+    status: 200, // ← 200 so supabase.functions.invoke() gives us the body
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { token, email, password, fullName, publisherName, phone, dateOfBirth } = await req.json();
+    const body = await req.json();
+    const { token, email, password, fullName, publisherName, phone, dateOfBirth } = body;
 
     if (!token || !email || !password || !fullName) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return fail("Campos obrigatórios em falta (token, email, password, fullName).");
     }
 
-    // Admin client with service role — bypasses email confirmation
+    // Admin client — uses service role, bypasses RLS and email confirmation
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // 1. Validate the invitation token
+    // 1. Validate the invitation token (service role bypasses RLS)
     const { data: invitation, error: tokenError } = await adminClient
       .from("reviewer_invitations")
       .select("*")
@@ -38,42 +49,51 @@ serve(async (req) => {
       .single();
 
     if (tokenError || !invitation) {
-      return new Response(
-        JSON.stringify({ error: "Token de convite inválido ou expirado." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return fail("Token de convite inválido ou expirado.");
     }
 
-    // 2. Check email matches invitation
+    // 2. Verify email matches the invitation
     if (invitation.email.toLowerCase() !== email.toLowerCase()) {
-      return new Response(
-        JSON.stringify({ error: "O email não corresponde ao convite." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return fail("O email não corresponde ao convite.");
     }
 
-    // 3. Create auth user (admin API — email already confirmed)
+    // 3. Create auth user with email pre-confirmed (admin API)
     const { data: userData, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // ← confirm immediately, skipping email verification
+      email_confirm: true,
       user_metadata: { full_name: fullName },
     });
 
-    if (createError) throw createError;
-    const userId = userData.user.id;
+    if (createError) {
+      // If user already exists (retry scenario), fetch the existing user
+      if (createError.message?.includes("already") || createError.message?.includes("exists")) {
+        const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+        const existingUser = existingUsers?.users?.find((u: any) => u.email === email.toLowerCase());
+        if (!existingUser) return fail(`Erro ao criar utilizador: ${createError.message}`);
+        // Update password for the existing user
+        await adminClient.auth.admin.updateUserById(existingUser.id, { password });
+        userData!.user = existingUser as any;
+      } else {
+        return fail(`Erro ao criar utilizador: ${createError.message}`);
+      }
+    }
+
+    const userId = userData!.user.id;
 
     // 4. Generate editor secret ID
-    const secretId = "VM-" + Array.from(crypto.getRandomValues(new Uint8Array(6)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase()
-      .slice(0, 12);
+    const secretId =
+      "VM-" +
+      Array.from(crypto.getRandomValues(new Uint8Array(6)))
+        .map((b: number) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase()
+        .slice(0, 12);
 
-    // 5. Create reviewer profile
+    // 5. Create reviewer profile (upsert in case of retry)
     const { data: profile, error: profileError } = await adminClient
       .from("reviewer_profiles")
-      .insert({
+      .upsert({
         id: userId,
         full_name: fullName,
         editor_secret_id: secretId,
@@ -86,7 +106,9 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      return fail(`Erro ao criar perfil: ${profileError.message}`);
+    }
 
     // 6. Mark invitation as accepted
     await adminClient
@@ -94,17 +116,11 @@ serve(async (req) => {
       .update({ status: "accepted" })
       .eq("token", token);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        editor_secret_id: profile.editor_secret_id,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return ok({
+      success: true,
+      editor_secret_id: profile.editor_secret_id,
+    });
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err.message || "Erro interno" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return fail(err?.message || "Erro interno no servidor.");
   }
 });
