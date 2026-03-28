@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -38,13 +38,26 @@ export const EditProfileDialog = ({
 }: EditProfileDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState(profile.full_name);
+  const [fullName, setFullName] = useState(profile.full_name || "");
   const [username, setUsername] = useState(profile.username || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [socialLink, setSocialLink] = useState(profile.social_link || "");
   const [isPrivate, setIsPrivate] = useState(profile.is_private || false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url || "");
+
+  // Sync state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setFullName(profile.full_name || "");
+      setUsername(profile.username || "");
+      setBio(profile.bio || "");
+      setSocialLink(profile.social_link || "");
+      setIsPrivate(profile.is_private || false);
+      setAvatarPreview(profile.avatar_url || "");
+      setAvatarFile(null);
+    }
+  }, [open, profile]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
