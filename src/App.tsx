@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -28,6 +28,14 @@ import ReviewerInviteAdmin from "./pages/reviewer/ReviewerInviteAdmin";
 
 const queryClient = new QueryClient();
 
+const RootRedirect = () => {
+  const hostname = window.location.hostname;
+  if (hostname.includes("validamabuku") || import.meta.env.VITE_IS_REVIEWER_APP === "true") {
+    return <Navigate to="/reviewer/auth" replace />;
+  }
+  return <Index />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -36,7 +44,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<CreateEbook />} />
