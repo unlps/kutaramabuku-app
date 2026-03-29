@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { setProfileCompletionOverride } from "@/lib/profile-completion";
 import {
   LANGUAGE_OPTIONS,
   GENRE_OPTIONS,
@@ -228,11 +229,12 @@ const CompleteProfile = () => {
       if (error) throw error;
 
       if (markAsComplete) {
+        setProfileCompletionOverride();
         toast({
           title: "Perfil concluido",
           description: "O teu perfil esta pronto e ja podes continuar.",
         });
-        window.location.replace("/dashboard");
+        navigate("/dashboard", { replace: true });
         return;
       }
 
