@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import CompleteProfile from "./pages/CompleteProfile";
 import Dashboard from "./pages/Dashboard";
 import CreateEbook from "./pages/CreateEbook";
 import Editor from "./pages/Editor";
@@ -25,6 +26,7 @@ import ReviewerQueue from "./pages/reviewer/ReviewerQueue";
 import ReviewerBookDetail from "./pages/reviewer/ReviewerBookDetail";
 import ReviewerProfile from "./pages/reviewer/ReviewerProfile";
 import ReviewerInviteAdmin from "./pages/reviewer/ReviewerInviteAdmin";
+import { AuthorRouteGuard } from "./components/auth/AuthorRouteGuard";
 
 const queryClient = new QueryClient();
 
@@ -46,16 +48,87 @@ const App = () => (
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/create" element={<CreateEbook />} />
-            <Route path="/editor" element={<Editor />} />
-            <Route path="/discover" element={<Discover />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/account/:userId" element={<Account />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/my-books" element={<MyBooks />} />
-            <Route path="/book/:id" element={<BookDetails />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
+            <Route
+              path="/dashboard"
+              element={
+                <AuthorRouteGuard>
+                  <Dashboard />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/create"
+              element={
+                <AuthorRouteGuard>
+                  <CreateEbook />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/editor"
+              element={
+                <AuthorRouteGuard>
+                  <Editor />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/discover"
+              element={
+                <AuthorRouteGuard>
+                  <Discover />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <AuthorRouteGuard>
+                  <Notifications />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <AuthorRouteGuard>
+                  <Account />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/account/:userId"
+              element={
+                <AuthorRouteGuard>
+                  <Account />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <AuthorRouteGuard>
+                  <Settings />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/my-books"
+              element={
+                <AuthorRouteGuard>
+                  <MyBooks />
+                </AuthorRouteGuard>
+              }
+            />
+            <Route
+              path="/book/:id"
+              element={
+                <AuthorRouteGuard>
+                  <BookDetails />
+                </AuthorRouteGuard>
+              }
+            />
 
             {/* ValidaMabuku — Reviewer Dashboard */}
             <Route path="/reviewer/auth" element={<ReviewerAuth />} />
