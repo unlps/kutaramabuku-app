@@ -3,8 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/validamabuku-favicon.png" />
-    <title>Valida Mabuku</title>
+    <script>
+      (function() {
+        var isValida = window.location.hostname.includes('validamabuku');
+        window.APP_CONFIG = { isValida: isValida };
+        
+        var favHref = isValida ? '/validamabuku-favicon.png' : '/kutarafavicon.png';
+        var appTitle = isValida ? 'Valida Mabuku' : 'Kutara Mabuku';
+        
+        var link = document.createElement('link');
+        link.rel = 'icon';
+        link.type = 'image/png';
+        link.href = favHref;
+        document.head.appendChild(link);
+        
+        document.title = appTitle;
+      })();
+    </script>
     <meta name="description" content="Create stunning standard, interactive, and professional ebooks with Kutara Mabuku. Easy-to-use templates and powerful creation tools.">
     <meta name="author" content="Kutara Mabuku" />
 
@@ -24,8 +39,14 @@
 
   <body>
     <div id="splash-screen" style="position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.3s ease-out;">
-      <img src="/validamabuku-logo.png" alt="Valida Mabuku" style="width: 150px; height: auto; margin-bottom: 24px; object-fit: contain;" />
-      <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 40px; background: linear-gradient(135deg, #70CBD4, #69A1EB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Valida Mabuku</h1>
+      <img id="splash-logo" src="" alt="Loading" style="width: 150px; height: auto; margin-bottom: 24px; object-fit: contain;" />
+      <h1 id="splash-title" style="font-size: 24px; font-weight: 700; margin-bottom: 40px; background: linear-gradient(135deg, #70CBD4, #69A1EB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></h1>
+      <script>
+        var logoImg = document.getElementById('splash-logo');
+        var titleElem = document.getElementById('splash-title');
+        if (logoImg) logoImg.src = window.APP_CONFIG && window.APP_CONFIG.isValida ? '/validamabuku-logo.png' : '/kutarafavicon.png';
+        if (titleElem) titleElem.textContent = window.APP_CONFIG && window.APP_CONFIG.isValida ? 'Valida Mabuku' : 'Kutara Mabuku';
+      </script>
       <div style="display: flex; gap: 12px;">
         <div style="width: 12px; height: 12px; border-radius: 50%; background: #70CBD4; animation: bounce 1.4s infinite ease-in-out both; animation-delay: -0.32s;"></div>
         <div style="width: 12px; height: 12px; border-radius: 50%; background: #69A1EB; animation: bounce 1.4s infinite ease-in-out both; animation-delay: -0.16s;"></div>
