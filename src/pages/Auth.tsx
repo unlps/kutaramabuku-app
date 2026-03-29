@@ -11,6 +11,7 @@ import { BookOpen, Chrome } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import authBackground from "@/assets/auth-background.png";
 import { authSchema } from "@/lib/validations";
+import { getProfileCompletionStatus } from "@/lib/profile-completion";
 const Auth = () => {
   const appUrl = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
   const [isLogin, setIsLogin] = useState(true);
@@ -24,23 +25,24 @@ const Auth = () => {
   } = useToast();
   const { theme } = useTheme();
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({
-      data: {
-        session
-      }
-    }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
+    const redirectAfterAuth = async () => {
+      const status = await getProfileCompletionStatus();
+      if (!status.hasSession) return;
+
+      navigate(status.isComplete ? "/dashboard" : "/complete-profile", {
+        replace: true
+      });
+    };
+
+    redirectAfterAuth();
+
     const {
       data: {
         subscription
       }
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        navigate("/dashboard");
+        await redirectAfterAuth();
       }
     });
     return () => subscription.unsubscribe();

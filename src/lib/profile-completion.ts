@@ -21,7 +21,7 @@ export const getProfileCompletionStatus = async (): Promise<ProfileCompletionSta
     .from("profiles")
     .select("profile_completed")
     .eq("id", session.user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw error;
