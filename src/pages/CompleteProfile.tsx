@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Camera, CheckCircle2, Globe, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,10 +86,7 @@ const CompleteProfile = () => {
 
   const currentStep = STEP_ORDER[currentStepIndex];
   const progressValue = ((currentStepIndex + 1) / STEP_ORDER.length) * 100;
-
-  const progressLabel = useMemo(() => {
-    return `Perfil ${Math.round(progressValue)}% completo`;
-  }, [progressValue]);
+  const stepLabel = `Etapa ${currentStepIndex + 1}/${STEP_ORDER.length}`;
 
   useEffect(() => {
     let isMounted = true;
@@ -235,7 +232,7 @@ const CompleteProfile = () => {
           title: "Perfil concluido",
           description: "O teu perfil esta pronto e ja podes continuar.",
         });
-        navigate("/dashboard", { replace: true });
+        window.location.replace("/dashboard");
         return;
       }
 
@@ -592,8 +589,8 @@ const CompleteProfile = () => {
         <div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-4 sm:px-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">{progressLabel}</span>
-              <span className="text-muted-foreground">{Math.round(progressValue)}%</span>
+              <span className="font-medium">{stepLabel}</span>
+              <span className="text-muted-foreground">{STEP_META[currentStep].title}</span>
             </div>
             <Progress value={progressValue} className="h-2" />
           </div>
