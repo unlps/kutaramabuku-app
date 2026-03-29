@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, HeartOff, ExternalLink, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock, ArrowLeft } from "lucide-react";
+import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, HeartOff, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock, ArrowLeft, Instagram, Facebook, Linkedin, Twitter, Link2 } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,17 @@ interface Profile {
   avatar_url?: string;
   social_link?: string;
   is_private?: boolean;
+  short_bio?: string;
+  detailed_bio?: string;
+  nationality?: string;
+  languages?: string[];
+  writing_genres?: string[];
+  content_type?: string;
+  writing_style?: string;
+  publisher?: string;
+  author_status?: string;
+  website?: string;
+  social_links?: Record<string, string> | null;
 }
 interface Stats {
   booksCreated: number;
@@ -86,7 +97,7 @@ const Account = () => {
         .eq("id", profileId)
         .single();
       if (profileData) {
-        setProfile(profileData);
+        setProfile(profileData as unknown as Profile);
       }
     } else {
       // Use the public view for other users' profiles (excludes email)
@@ -201,7 +212,7 @@ const Account = () => {
             status: 'pending'
           });
           setFollowRequestPending(true);
-          
+
           // Create notification for the target user
           await supabase.rpc('create_system_notification', {
             p_user_id: profile.id,
@@ -210,7 +221,7 @@ const Account = () => {
             p_message: 'Alguém quer seguir você',
             p_data: { follower_id: currentUserId }
           });
-          
+
           toast({
             title: "Pedido para seguir enviado"
           });
@@ -240,8 +251,8 @@ const Account = () => {
   };
   const handleTogglePublic = async (bookId: string, currentStatus: boolean) => {
     toast({
-      title: "Publica��o controlada por revis�o",
-      description: "O livro s� fica p�blico depois de aprovado pelos reviewers."
+      title: "Publica��o controlada por revis�o",
+      description: "O livro s� fica p�blico depois de aprovado pelos reviewers."
     });
   };
   const handleDeleteEbook = async () => {
@@ -392,376 +403,500 @@ const Account = () => {
   const isOwnProfile = !userId || userId === currentUserId;
   const selectedBookSubmission = selectedBook ? submissionMap[selectedBook.id] : undefined;
   const selectedBookState = getEbookReviewState(selectedBook?.is_public, selectedBookSubmission);
+  const languagesList = profile?.languages || [];
+  const writingGenresList = profile?.writing_genres || [];
+  const socialLinksMap = (profile?.social_links as Record<string, string> | null) || {};
+  const socialEntries = Object.entries(socialLinksMap).filter(([, value]) => Boolean(value));
+  const primaryProfileLink = profile?.website || profile?.social_link;
+  const hasIdentitySection = Boolean(profile?.short_bio || profile?.detailed_bio || profile?.nationality || languagesList.length);
+  const hasWritingSection = Boolean(
+    profile?.content_type ||
+    profile?.writing_style ||
+    profile?.publisher ||
+    profile?.author_status ||
+    writingGenresList.length
+  );
+  const hasPresenceSection = Boolean(primaryProfileLink || socialEntries.length || profile?.is_private !== undefined);
+  const getSocialMeta = (network: string) => {
+    switch (network.toLowerCase()) {
+      case 'instagram':
+        return { label: 'Instagram', icon: <Instagram className='h-4 w-4' /> };
+      case 'facebook':
+        return { label: 'Facebook', icon: <Facebook className='h-4 w-4' /> };
+      case 'linkedin':
+        return { label: 'LinkedIn', icon: <Linkedin className='h-4 w-4' /> };
+      case 'x':
+      case 'twitter':
+        return { label: 'X', icon: <Twitter className='h-4 w-4' /> };
+      default:
+        return { label: network, icon: <Link2 className='h-4 w-4' /> };
+    }
+  };
   return <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {!isOwnProfile && (
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 rounded-lg object-cover" />
-            <h1 className="text-2xl font-bold">Perfil</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {isOwnProfile && <>
-                <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
-                  <Settings className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleLogout}>
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              </>}
-          </div>
+    {/* Header */}
+    <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {!isOwnProfile && (
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 rounded-lg object-cover" />
+          <h1 className="text-2xl font-bold">Perfil</h1>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          {isOwnProfile && <>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
+              <Settings className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </>}
+        </div>
+      </div>
+    </header>
 
-      <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
-        {/* Profile Header */}
-        <Card className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-              <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="bg-gradient-primary text-white text-2xl sm:text-3xl">
-                {profile?.full_name?.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 text-center sm:text-left w-full">
-              <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "Usuário"}</h2>
-              {profile?.username && <p className="text-muted-foreground text-sm">@{profile.username}</p>}
+    <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
+      {/* Profile Header */}
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
+            <AvatarImage src={profile?.avatar_url} />
+            <AvatarFallback className="bg-gradient-primary text-white text-2xl sm:text-3xl">
+              {profile?.full_name?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 text-center sm:text-left w-full">
+            <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "Usuário"}</h2>
+            {profile?.username && <p className="text-muted-foreground text-sm">@{profile.username}</p>}
 
-              {/* Stats */}
-              <div className="flex justify-center sm:justify-start gap-4 sm:gap-6 mt-4">
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold">{stats.booksCreated}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">Trabalhos</div>
-                </div>
-                <div className="text-center cursor-pointer hover:opacity-80">
-                  <div className="text-lg sm:text-xl font-bold">{stats.followers}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">Seguidores</div>
-                </div>
-                <div className="text-center cursor-pointer hover:opacity-80">
-                  <div className="text-lg sm:text-xl font-bold">{stats.following}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">Seguindo</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold">{stats.booksRead}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">Lidos</div>
-                </div>
+            {/* Stats */}
+            <div className="flex justify-center sm:justify-start gap-4 sm:gap-6 mt-4">
+              <div className="text-center">
+                <div className="text-lg sm:text-xl font-bold">{stats.booksCreated}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">Trabalhos</div>
+              </div>
+              <div className="text-center cursor-pointer hover:opacity-80">
+                <div className="text-lg sm:text-xl font-bold">{stats.followers}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">Seguidores</div>
+              </div>
+              <div className="text-center cursor-pointer hover:opacity-80">
+                <div className="text-lg sm:text-xl font-bold">{stats.following}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">Seguindo</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg sm:text-xl font-bold">{stats.booksRead}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">Lidos</div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Action Button */}
-          <div className="mt-4">
-            {isOwnProfile ? <Button variant="outline" className="w-full" onClick={() => navigate("/edit-profile")}>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Editar Perfil
-              </Button> : <Button 
-                variant={isFollowing ? "outline" : followRequestPending ? "secondary" : "default"} 
-                className="w-full" 
-                onClick={handleFollow}
-              >
-                {isFollowing ? <>
-                    <UserMinus className="h-4 w-4 mr-2" />
-                    Deixar de Seguir
-                  </> : followRequestPending ? <>
-                    <Clock className="h-4 w-4 mr-2" />
-                    Pedido Enviado
-                  </> : <>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Seguir
-                  </>}
-              </Button>}
+        {/* Action Button */}
+        <div className="mt-4">
+          {isOwnProfile ? <Button variant="outline" className="w-full" onClick={() => navigate("/edit-profile")}>
+            <Edit2 className="h-4 w-4 mr-2" />
+            Editar Perfil
+          </Button> : <Button
+            variant={isFollowing ? "outline" : followRequestPending ? "secondary" : "default"}
+            className="w-full"
+            onClick={handleFollow}
+          >
+            {isFollowing ? <>
+              <UserMinus className="h-4 w-4 mr-2" />
+              Deixar de Seguir
+            </> : followRequestPending ? <>
+              <Clock className="h-4 w-4 mr-2" />
+              Pedido Enviado
+            </> : <>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Seguir
+            </>}
+          </Button>}
+        </div>
+      </Card>
+
+      {/* Profile Details */}
+      {(hasIdentitySection || hasWritingSection || hasPresenceSection) && <div className="grid gap-6 lg:grid-cols-2">
+        {(profile?.short_bio || profile?.detailed_bio) && <Card className="p-6 lg:col-span-2">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sobre</p>
+              {profile?.short_bio && <p className="mt-3 text-lg font-medium leading-relaxed text-foreground">{profile.short_bio}</p>}
+            </div>
+            {profile?.author_status && <Badge variant="secondary" className="self-start rounded-full px-3 py-1">{profile.author_status}</Badge>}
+          </div>
+          {profile?.detailed_bio && <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground">{profile.detailed_bio}</p>}
+        </Card>}
+
+        {hasIdentitySection && <Card className="p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold">Identidade</h3>
+              <p className="text-sm text-muted-foreground">Informacao essencial do autor.</p>
+            </div>
+            <Badge variant="outline" className="rounded-full">{profile?.is_private ? "Perfil privado" : "Perfil publico"}</Badge>
+          </div>
+
+          <div className="mt-5 space-y-4 text-sm">
+            {profile?.nationality && <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Nacionalidade</p>
+              <p className="mt-1 font-medium text-foreground">{profile.nationality}</p>
+            </div>}
+
+            {languagesList.length > 0 && <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Idiomas</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {languagesList.map((language) => <Badge key={language} variant="secondary" className="rounded-full">{language}</Badge>)}
+              </div>
+            </div>}
+          </div>
+        </Card>}
+
+        {hasWritingSection && <Card className="p-6">
+          <div>
+            <h3 className="text-lg font-semibold">Escrita</h3>
+            <p className="text-sm text-muted-foreground">Como este autor se apresenta editorialmente.</p>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 text-sm">
+            {profile?.content_type && <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Tipo de conteudo</p>
+              <p className="mt-1 font-medium text-foreground">{profile.content_type}</p>
+            </div>}
+            {profile?.writing_style && <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Estilo de escrita</p>
+              <p className="mt-1 font-medium text-foreground">{profile.writing_style}</p>
+            </div>}
+            {profile?.publisher && <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Editora</p>
+              <p className="mt-1 font-medium text-foreground">{profile.publisher}</p>
+            </div>}
+            {profile?.author_status && <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Status</p>
+              <p className="mt-1 font-medium text-foreground">{profile.author_status}</p>
+            </div>}
+          </div>
+
+          {writingGenresList.length > 0 && <div className="mt-5">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Generos</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {writingGenresList.map((genre) => <Badge key={genre} className="rounded-full bg-primary/10 text-primary hover:bg-primary/10">{genre}</Badge>)}
+            </div>
+          </div>}
+        </Card>}
+
+        {hasPresenceSection && <Card className="p-6 lg:col-span-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Presenca online</h3>
+              <p className="text-sm text-muted-foreground">Canais e links publicos do autor.</p>
+            </div>
+            <Badge variant="outline" className="self-start rounded-full">{profile?.is_private ? "Seguidores por aprovacao" : "Visibilidade aberta"}</Badge>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
+              <Globe className="h-4 w-4" />                      Website
+            </a>}
+            {!profile?.website && profile?.social_link && <a href={profile.social_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
+              <Link2 className="h-4 w-4" />                      Link principal
+            </a>}
+            {socialEntries.map(([network, url]) => {
+              const socialMeta = getSocialMeta(network);
+              return <a key={network} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-muted">
+                {socialMeta.icon}
+                {socialMeta.label}
+              </a>;
+            })}
+          </div>
+        </Card>}
+      </div>}
+
+      {/* Private Account Message */}
+      {!isOwnProfile && profile?.is_private && !isFollowing && (
+        <Card className="p-8">
+          <div className="flex flex-col items-center justify-center text-center">
+            <Lock className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-bold mb-2">Conta Privada</h3>
+            <p className="text-muted-foreground">
+              Siga esta conta para ver os livros publicados.
+            </p>
           </div>
         </Card>
+      )}
 
-        {/* About Section */}
-        {profile?.bio && <Card className="p-6">
-            <h3 className="font-bold mb-2">Sobre</h3>
-            <p className="text-muted-foreground text-justify">{profile.bio}</p>
-            {profile.social_link && <a href={profile.social_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-3 text-primary hover:underline">
-                <ExternalLink className="h-4 w-4" />
-                Link de Rede Social
-              </a>}
-          </Card>}
-
-        {/* Private Account Message */}
-        {!isOwnProfile && profile?.is_private && !isFollowing && (
-          <Card className="p-8">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Lock className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-bold mb-2">Conta Privada</h3>
-              <p className="text-muted-foreground">
-                Siga esta conta para ver os livros publicados.
-              </p>
-            </div>
-          </Card>
-        )}
-
-        {/* Public Books */}
-        {(isOwnProfile || !profile?.is_private || isFollowing) && publicBooks.length > 0 && <div>
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <BookOpen className="h-6 w-5" />
-              Livros Públicos ({publicBooks.length})
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {publicBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
+      {/* Public Books */}
+      {(isOwnProfile || !profile?.is_private || isFollowing) && publicBooks.length > 0 && <div>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <BookOpen className="h-6 w-5" />
+          Livros Públicos ({publicBooks.length})
+        </h3>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {publicBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
             setIsWishlistBook(false);
             setShowBookDialog(true);
           }}>
-                  <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-                  </div>
-                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                    {book.author || "Autor Desconhecido"}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {book.views || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Download className="h-3 w-3" />
-                      {book.downloads || 0}
-                    </span>
-                  </div>
-                </Card>)}
+            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
             </div>
-          </div>}
+            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+              {book.author || "Autor Desconhecido"}
+            </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {book.views || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Download className="h-3 w-3" />
+                {book.downloads || 0}
+              </span>
+            </div>
+          </Card>)}
+        </div>
+      </div>}
 
-        {/* Private Books (only for own profile) */}
-        {isOwnProfile && reviewBooks.length > 0 && <div>
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Livros em Avaliação ({reviewBooks.length})
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {reviewBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
+      {/* Private Books (only for own profile) */}
+      {isOwnProfile && reviewBooks.length > 0 && <div>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          Livros em Avaliação ({reviewBooks.length})
+        </h3>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {reviewBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
             setIsWishlistBook(false);
             setShowBookDialog(true);
           }}>
-                  <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-                  </div>
-                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                    {book.author || "Autor Desconhecido"}
-                  </p>
-                  <div className="pt-2 border-t">
-                    <span className="inline-flex items-center gap-1 text-xs text-amber-700">
-                      <Clock className="h-3 w-3" />
-                      Em avaliação
-                    </span>
-                  </div>
-                </Card>)}
+            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
             </div>
-          </div>}
+            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+              {book.author || "Autor Desconhecido"}
+            </p>
+            <div className="pt-2 border-t">
+              <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+                <Clock className="h-3 w-3" />
+                Em avaliação
+              </span>
+            </div>
+          </Card>)}
+        </div>
+      </div>}
 
-        {/* Private Books (only for own profile) */}
-        {isOwnProfile && privateBooks.length > 0 && <div>
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Livros Privados ({privateBooks.length})
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {privateBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
+      {/* Private Books (only for own profile) */}
+      {isOwnProfile && privateBooks.length > 0 && <div>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <BookOpen className="h-5 w-5" />
+          Livros Privados ({privateBooks.length})
+        </h3>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {privateBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
             setIsWishlistBook(false);
             setShowBookDialog(true);
           }}>
-                  <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-                    {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-                  </div>
-                  <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                    {book.author || "Autor Desconhecido"}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {book.views || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Download className="h-3 w-3" />
-                      {book.downloads || 0}
-                    </span>
-                  </div>
-                </Card>)}
+            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
             </div>
-          </div>}
+            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+              {book.author || "Autor Desconhecido"}
+            </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {book.views || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Download className="h-3 w-3" />
+                {book.downloads || 0}
+              </span>
+            </div>
+          </Card>)}
+        </div>
+      </div>}
 
-        {/* Wishlist (only for own profile) */}
-        {isOwnProfile && wishlist.length > 0 && <div>
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Heart className="h-5 w-5" />
-              Lista de Desejos ({wishlist.length})
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {wishlist.map(book => book && <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
+      {/* Wishlist (only for own profile) */}
+      {isOwnProfile && wishlist.length > 0 && <div>
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Heart className="h-5 w-5" />
+          Lista de Desejos ({wishlist.length})
+        </h3>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {wishlist.map(book => book && <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
             setSelectedBook(book);
             setIsWishlistBook(true);
             setShowBookDialog(true);
           }}>
-                      <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-                        {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-                      </div>
-                      <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                        {book.author || "Autor Desconhecido"}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {book.views || 0}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Download className="h-3 w-3" />
-                          {book.downloads || 0}
-                        </span>
-                      </div>
-                    </Card>)}
+            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
             </div>
+            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+              {book.author || "Autor Desconhecido"}
+            </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {book.views || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Download className="h-3 w-3" />
+                {book.downloads || 0}
+              </span>
+            </div>
+          </Card>)}
+        </div>
+      </div>}
+    </main>
+
+    {/* Book Details Dialog */}
+    <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
+      <DialogContent className="sm:max-w-[500px]">
+        <div className="space-y-4">
+          {selectedBook?.cover_image && <div className="flex justify-center">
+            <img src={selectedBook.cover_image} alt={selectedBook.title} className="w-48 h-auto rounded-lg border shadow-sm" />
           </div>}
-      </main>
 
-      {/* Book Details Dialog */}
-      <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <div className="space-y-4">
-            {selectedBook?.cover_image && <div className="flex justify-center">
-                <img src={selectedBook.cover_image} alt={selectedBook.title} className="w-48 h-auto rounded-lg border shadow-sm" />
-              </div>}
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold leading-none tracking-tight">
+              {stripHtml(selectedBook?.title || "")}
+            </h2>
+            <p className="text-sm text-muted-foreground line-clamp-3">
+              {stripHtml(selectedBook?.description || "Sem descrição")}
+            </p>
+          </div>
 
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold leading-none tracking-tight">
-                {stripHtml(selectedBook?.title || "")}
-              </h2>
-              <p className="text-sm text-muted-foreground line-clamp-3">
-                {stripHtml(selectedBook?.description || "Sem descrição")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Criado em</p>
-                <p className="font-medium">
-                  {selectedBook?.created_at ? new Date(selectedBook.created_at).toLocaleDateString("pt-PT", {
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Criado em</p>
+              <p className="font-medium">
+                {selectedBook?.created_at ? new Date(selectedBook.created_at).toLocaleDateString("pt-PT", {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric"
                 }) : "-"}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Páginas</p>
-                <p className="font-medium">{selectedBook?.pages || 0}</p>
-              </div>
+              </p>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Visualizações</p>
-                <p className="font-medium flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  {selectedBook?.views || 0}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Downloads</p>
-                <p className="font-medium flex items-center gap-1">
-                  <Download className="h-4 w-4" />
-                  {selectedBook?.downloads || 0}
-                </p>
-              </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Páginas</p>
+              <p className="font-medium">{selectedBook?.pages || 0}</p>
             </div>
-
-            {isOwnProfile && !isWishlistBook && <div className="border-t pt-4 space-y-3">
-                <div className="space-y-1">
-                  <p className="font-medium">Estado editorial</p>
-                  <div className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${selectedBookState.badgeClassName}`}>
-                    {selectedBookState.label}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedBookState.description}
-                  </p>
-                </div>
-                {selectedBookSubmission?.submitted_at && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Enviado para avalia��o</p>
-                      <p className="font-medium">
-                        {new Date(selectedBookSubmission.submitted_at).toLocaleDateString("pt-PT", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric"
-                    })}
-                      </p>
-                    </div>
-                    {selectedBookSubmission.reviewed_at && <div>
-                        <p className="text-muted-foreground">Respondido em</p>
-                        <p className="font-medium">
-                          {new Date(selectedBookSubmission.reviewed_at).toLocaleDateString("pt-PT", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric"
-                      })}
-                        </p>
-                      </div>}
-                  </div>}
-              </div>}
           </div>
 
-          {isOwnProfile && !isWishlistBook ? <DialogFooter className="flex-col sm:flex-row gap-2">
-              {selectedBookState.canEdit && <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Apagar
-                </Button>}
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={handleDownloadEbook} className="flex-1 sm:flex-none">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download
-                </Button>
-                {selectedBookState.canEdit ? <Button onClick={() => {
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Visualizações</p>
+              <p className="font-medium flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                {selectedBook?.views || 0}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Downloads</p>
+              <p className="font-medium flex items-center gap-1">
+                <Download className="h-4 w-4" />
+                {selectedBook?.downloads || 0}
+              </p>
+            </div>
+          </div>
+
+          {isOwnProfile && !isWishlistBook && <div className="border-t pt-4 space-y-3">
+            <div className="space-y-1">
+              <p className="font-medium">Estado editorial</p>
+              <div className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${selectedBookState.badgeClassName}`}>
+                {selectedBookState.label}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {selectedBookState.description}
+              </p>
+            </div>
+            {selectedBookSubmission?.submitted_at && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground">Enviado para avalia��o</p>
+                <p className="font-medium">
+                  {new Date(selectedBookSubmission.submitted_at).toLocaleDateString("pt-PT", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  })}
+                </p>
+              </div>
+              {selectedBookSubmission.reviewed_at && <div>
+                <p className="text-muted-foreground">Respondido em</p>
+                <p className="font-medium">
+                  {new Date(selectedBookSubmission.reviewed_at).toLocaleDateString("pt-PT", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  })}
+                </p>
+              </div>}
+            </div>}
+          </div>}
+        </div>
+
+        {isOwnProfile && !isWishlistBook ? <DialogFooter className="flex-col sm:flex-row gap-2">
+          {selectedBookState.canEdit && <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Apagar
+          </Button>}
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={handleDownloadEbook} className="flex-1 sm:flex-none">
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+            {selectedBookState.canEdit ? <Button onClick={() => {
               navigate(`/editor?id=${selectedBook?.id}`);
               setShowBookDialog(false);
             }} className="flex-1 sm:flex-none">
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar
-                  </Button> : <Button onClick={() => {
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button> : <Button onClick={() => {
               setShowBookDialog(false);
               navigate(`/book/${selectedBook?.id}`);
             }} className="flex-1 sm:flex-none">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Ler
-                  </Button>}
-              </div>
-            </DialogFooter> : <DialogFooter className="flex gap-2">
-              {isWishlistBook && (
-                <Button variant="destructive" onClick={handleRemoveFromWishlist} className="flex-1">
-                  <HeartOff className="mr-2 h-4 w-4" />
-                  Remover
-                </Button>
-              )}
-              <Button onClick={() => {
+              <BookOpen className="mr-2 h-4 w-4" />
+              Ler
+            </Button>}
+          </div>
+        </DialogFooter> : <DialogFooter className="flex gap-2">
+          {isWishlistBook && (
+            <Button variant="destructive" onClick={handleRemoveFromWishlist} className="flex-1">
+              <HeartOff className="mr-2 h-4 w-4" />
+              Remover
+            </Button>
+          )}
+          <Button onClick={() => {
             setShowBookDialog(false);
             navigate(`/book/${selectedBook?.id}`);
           }} className="flex-1">
-                Ver Detalhes
-              </Button>
-            </DialogFooter>}
-        </DialogContent>
-      </Dialog>
+            Ver Detalhes
+          </Button>
+        </DialogFooter>}
+      </DialogContent>
+    </Dialog>
 
-      {/* Bottom Navigation */}
-      <BottomNav />
-    </div>;
+    {/* Bottom Navigation */}
+    <BottomNav />
+  </div>;
 };
 export default Account;
+
+
+
+
+
+
+
+
 
 
 
