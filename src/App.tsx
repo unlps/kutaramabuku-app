@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import CompleteProfile from "./pages/CompleteProfile";
+import EditProfile from "./pages/EditProfile";
 import Dashboard from "./pages/Dashboard";
 import CreateEbook from "./pages/CreateEbook";
 import Editor from "./pages/Editor";
@@ -49,6 +50,15 @@ const App = () => (
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
+            <Route path="/complete_profile" element={<CompleteProfile />} />
+            <Route
+              path="/edit-profile"
+              element={
+                <AuthorRouteGuard>
+                  <EditProfile />
+                </AuthorRouteGuard>
+              }
+            />
             <Route
               path="/dashboard"
               element={

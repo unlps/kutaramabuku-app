@@ -12,6 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import {
+  LANGUAGE_OPTIONS,
+  GENRE_OPTIONS,
+  CONTENT_TYPE_OPTIONS,
+  AUTHOR_STATUS_OPTIONS,
+  toggleArrayValue,
+} from "@/lib/author-profile-options";
 
 type StepKey = "identity" | "writing" | "presence" | "trust";
 
@@ -36,31 +43,12 @@ const STEP_META: Record<StepKey, { title: string; subtitle: string }> = {
   },
 };
 
-const LANGUAGE_OPTIONS = ["Portugues", "Ingles", "Frances", "Espanhol", "Suaile", "Xitsonga"];
-const GENRE_OPTIONS = [
-  "Romance",
-  "Poesia",
-  "Fantasia",
-  "Misterio",
-  "Thriller",
-  "Biografia",
-  "Autoajuda",
-  "Infantil",
-  "Educativo",
-];
-const CONTENT_TYPE_OPTIONS = ["Livros", "Poesia", "Contos", "Ensaios", "Guias", "Cronicas"];
-const AUTHOR_STATUS_OPTIONS = ["Independente", "Publicado", "Iniciante"];
-
 interface SocialLinksState {
   instagram: string;
   facebook: string;
   linkedin: string;
   x: string;
 }
-
-const toggleArrayValue = (values: string[], value: string) => {
-  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
-};
 
 const CompleteProfile = () => {
   const navigate = useNavigate();
@@ -582,25 +570,6 @@ const CompleteProfile = () => {
             <p className="text-sm text-muted-foreground">
               Preenche o essencial para terminares a configuracao da tua conta de autor.
             </p>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-4">
-            {STEP_ORDER.map((stepKey, index) => {
-              const isActive = index === currentStepIndex;
-              const isDone = index < currentStepIndex;
-
-              return (
-                <div
-                  key={stepKey}
-                  className={`rounded-xl border px-3 py-2 text-sm ${
-                    isActive ? "border-primary bg-primary/5" : isDone ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"
-                  }`}
-                >
-                  <p className="font-medium">{STEP_META[stepKey].title}</p>
-                  <p className="text-xs text-muted-foreground">{STEP_META[stepKey].subtitle}</p>
-                </div>
-              );
-            })}
           </div>
         </div>
       </header>

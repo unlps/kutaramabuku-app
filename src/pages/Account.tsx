@@ -12,7 +12,6 @@ import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, H
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
-import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { stripHtml } from "@/lib/utils";
 import { getEbookReviewState, loadLatestSubmissions, type LatestSubmission } from "@/lib/review-status";
 interface Profile {
@@ -46,7 +45,6 @@ const Account = () => {
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followRequestPending, setFollowRequestPending] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [showBookDialog, setShowBookDialog] = useState(false);
@@ -458,7 +456,7 @@ const Account = () => {
 
           {/* Action Button */}
           <div className="mt-4">
-            {isOwnProfile ? <Button variant="outline" className="w-full" onClick={() => setIsEditDialogOpen(true)}>
+            {isOwnProfile ? <Button variant="outline" className="w-full" onClick={() => navigate("/edit-profile")}>
                 <Edit2 className="h-4 w-4 mr-2" />
                 Editar Perfil
               </Button> : <Button 
@@ -759,13 +757,12 @@ const Account = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Profile Dialog */}
-      {profile && <EditProfileDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} profile={profile} onProfileUpdated={fetchData} />}
-
       {/* Bottom Navigation */}
       <BottomNav />
     </div>;
 };
 export default Account;
+
+
 
 
