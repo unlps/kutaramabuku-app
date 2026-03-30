@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { setProfileCompletionOverride } from "@/lib/profile-completion";
@@ -18,7 +20,12 @@ import {
   GENRE_OPTIONS,
   CONTENT_TYPE_OPTIONS,
   AUTHOR_STATUS_OPTIONS,
+  MOZAMBICAN_PUBLISHER_OPTIONS,
+  WRITING_STYLE_OPTIONS,
+  parseDelimitedList,
+  serializeDelimitedList,
   toggleArrayValue,
+  toggleArrayValueWithLimit,
 } from "@/lib/author-profile-options";
 
 type StepKey = "identity" | "writing" | "presence" | "trust";
@@ -71,7 +78,7 @@ const CompleteProfile = () => {
 
   const [writingGenres, setWritingGenres] = useState<string[]>([]);
   const [contentType, setContentType] = useState("");
-  const [writingStyle, setWritingStyle] = useState("");
+  const [writingStyles, setWritingStyles] = useState<string[]>([]);
   const [publisher, setPublisher] = useState("");
   const [authorStatus, setAuthorStatus] = useState("");
 
@@ -130,7 +137,7 @@ const CompleteProfile = () => {
         setLanguages(profile.languages || []);
         setWritingGenres(profile.writing_genres || []);
         setContentType(profile.content_type || "");
-        setWritingStyle(profile.writing_style || "");
+        setWritingStyles(parseDelimitedList(profile.writing_style));
         setPublisher(profile.publisher || "");
         setAuthorStatus(profile.author_status || "");
         setWebsite(profile.website || "");
@@ -215,7 +222,7 @@ const CompleteProfile = () => {
           languages,
           writing_genres: writingGenres,
           content_type: contentType || null,
-          writing_style: writingStyle || null,
+          writing_style: writingStyles.length ? serializeDelimitedList(writingStyles) : null,
           publisher: publisher || null,
           author_status: authorStatus || null,
           website: website || null,
@@ -398,23 +405,75 @@ const CompleteProfile = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="writing-style">Estilo de escrita</Label>
-                <Input
-                  id="writing-style"
-                  value={writingStyle}
-                  onChange={(event) => setWritingStyle(event.target.value)}
-                  placeholder="Ex: Poetico, academico, minimalista..."
-                />
+                <Label>Estilo de escrita</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between font-normal">
+                      <span className="truncate">
+                        {writingStyles.length > 0 ? (writingStyles.length + "/3 estilos selecionados") : "Seleciona ate 3 estilos"}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[320px]">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">Escolhe ate 3 estilos</p>
+                        <p className="text-xs text-muted-foreground">Os estilos escolhidos vao aparecer como tags no teu perfil.</p>
+                      </div>
+                      <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
+                        {WRITING_STYLE_OPTIONS.map((option) => {
+                          const checked = writingStyles.includes(option);
+                          const disabled = !checked && writingStyles.length >= 3;
+
+                          return (
+                            <label key={option} className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm hover:bg-muted/60">
+                              <Checkbox
+                                checked={checked}
+                                disabled={disabled}
+                                onCheckedChange={() =>
+                                  setWritingStyles((current) => toggleArrayValueWithLimit(current, option, 3))
+                                }
+                              />
+                              <span>{option}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {writingStyles.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {writingStyles.map((style) => (
+                      <Button
+                        key={style}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWritingStyles((current) => current.filter((item) => item !== style))}
+                        className="rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+                      >
+                        {style}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="publisher">Editora</Label>
-                <Input
-                  id="publisher"
-                  value={publisher}
-                  onChange={(event) => setPublisher(event.target.value)}
-                  placeholder="Se tiver, indica a editora."
-                />
+                <Label>Editora</Label>
+                <Select value={publisher || undefined} onValueChange={setPublisher}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleciona uma editora" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOZAMBICAN_PUBLISHER_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -636,4 +695,8 @@ const CompleteProfile = () => {
 };
 
 export default CompleteProfile;
+
+
+
+
 

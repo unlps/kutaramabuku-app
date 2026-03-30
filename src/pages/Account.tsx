@@ -13,6 +13,7 @@ import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { stripHtml } from "@/lib/utils";
+import { parseDelimitedList } from "@/lib/author-profile-options";
 import { getEbookReviewState, loadLatestSubmissions, type LatestSubmission } from "@/lib/review-status";
 interface Profile {
   id: string;
@@ -405,6 +406,7 @@ const Account = () => {
   const selectedBookState = getEbookReviewState(selectedBook?.is_public, selectedBookSubmission);
   const languagesList = profile?.languages || [];
   const writingGenresList = profile?.writing_genres || [];
+  const writingStyleList = parseDelimitedList(profile?.writing_style);
   const socialLinksMap = (profile?.social_links as Record<string, string> | null) || {};
   const socialEntries = Object.entries(socialLinksMap).filter(([, value]) => Boolean(value));
   const primaryProfileLink = profile?.website || profile?.social_link;
@@ -524,9 +526,11 @@ const Account = () => {
               </div>
 
               <div className="space-y-4 text-sm">
-                {profile?.writing_style && <div className="space-y-1">
+                {writingStyleList.length > 0 && <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Estilo de escrita</p>
-                  <p className="font-medium text-foreground">{profile.writing_style}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {writingStyleList.map((style) => <Badge key={style} className="rounded-full bg-primary/10 text-primary hover:bg-primary/10">{style}</Badge>)}
+                  </div>
                 </div>}
                 {profile?.author_status && <div className="space-y-1">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Status</p>
@@ -857,6 +861,8 @@ const Account = () => {
   </div>;
 };
 export default Account;
+
+
 
 
 
