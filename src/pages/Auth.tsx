@@ -15,6 +15,13 @@ import { getProfileCompletionStatus } from "@/lib/profile-completion";
 
 type SignupStep = "details" | "verify";
 
+const PENDING_SIGNUP_STORAGE_KEY = "kutaramabuku.pending_signup";
+
+interface PendingSignupState {
+  email: string;
+  cooldownUntil: number;
+}
+
 const Auth = () => {
   const appUrl = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
   const [isLogin, setIsLogin] = useState(true);
@@ -28,6 +35,27 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const savePendingSignupState = (state: PendingSignupState) => {
+    localStorage.setItem(PENDING_SIGNUP_STORAGE_KEY, JSON.stringify(state));
+  };
+
+  const loadPendingSignupState = (): PendingSignupState | null => {
+    const rawValue = localStorage.getItem(PENDING_SIGNUP_STORAGE_KEY);
+    if (!rawValue) return null;
+
+    try {
+      const parsed = JSON.parse(rawValue) as PendingSignupState;
+      if (!parsed?.email) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearPendingSignupState = () => {
+    localStorage.removeItem(PENDING_SIGNUP_STORAGE_KEY);
+  };
 
   const redirectAfterAuth = async () => {
     const status = await getProfileCompletionStatus();
@@ -68,11 +96,36 @@ const Auth = () => {
     return () => window.clearInterval(timer);
   }, [signupStep, resendCooldown]);
 
+  useEffect(() => {
+    if (isLogin) return;
+
+    const pendingSignup = loadPendingSignupState();
+    if (!pendingSignup?.email) return;
+
+    const remainingCooldown = Math.max(0, Math.ceil((pendingSignup.cooldownUntil - Date.now()) / 1000));
+    setEmail(pendingSignup.email);
+    setPendingSignupEmail(pendingSignup.email);
+    setResendCooldown(remainingCooldown);
+  }, [isLogin]);
+
   const resetSignupFlow = () => {
     setSignupStep("details");
     setVerificationCode("");
     setPendingSignupEmail("");
     setResendCooldown(0);
+  };
+
+  const restorePendingVerification = (targetEmail: string) => {
+    const pendingSignup = loadPendingSignupState();
+    const remainingCooldown =
+      pendingSignup?.email?.toLowerCase() === targetEmail.toLowerCase()
+        ? Math.max(0, Math.ceil((pendingSignup.cooldownUntil - Date.now()) / 1000))
+        : 0;
+
+    setPendingSignupEmail(targetEmail);
+    setVerificationCode("");
+    setSignupStep("verify");
+    setResendCooldown(remainingCooldown);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -111,13 +164,22 @@ const Auth = () => {
         return;
       }
 
-      const { data: emailAvailable, error: emailCheckError } = await (supabase as any).rpc("is_email_available", {
+      const { data: registrationStatus, error: emailCheckError } = await (supabase as any).rpc("get_email_registration_status", {
         p_email: email,
       });
 
       if (emailCheckError) throw emailCheckError;
-      if (!emailAvailable) {
-        throw new Error("Este email já está associado a uma conta.");
+      if (registrationStatus === "registered") {
+        throw new Error("Este email ja esta associado a uma conta.");
+      }
+
+      if (registrationStatus === "pending_verification") {
+        restorePendingVerification(email);
+        toast({
+          title: "Verificacao pendente",
+          description: "Este email ja recebeu um codigo. Continua a verificacao ou reenvia quando estiver disponivel.",
+        });
+        return;
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -141,6 +203,10 @@ const Auth = () => {
       setVerificationCode("");
       setSignupStep("verify");
       setResendCooldown(60);
+      savePendingSignupState({
+        email,
+        cooldownUntil: Date.now() + 60_000,
+      });
 
       toast({
         title: "Codigo enviado",
@@ -171,6 +237,10 @@ const Auth = () => {
       if (error) throw error;
 
       setResendCooldown(60);
+      savePendingSignupState({
+        email: pendingSignupEmail,
+        cooldownUntil: Date.now() + 60_000,
+      });
       toast({
         title: "Codigo reenviado",
         description: "Enviamos um novo codigo de verificacao para o teu email.",
@@ -228,6 +298,7 @@ const Auth = () => {
         description: "Conta confirmada com sucesso.",
       });
 
+      clearPendingSignupState();
       resetSignupFlow();
       navigate("/complete-profile", { replace: true });
     } catch (error: any) {
@@ -410,7 +481,9 @@ const Auth = () => {
                 type="button"
                 onClick={() => {
                   setIsLogin(!isLogin);
-                  resetSignupFlow();
+                  if (isLogin) {
+                    resetSignupFlow();
+                  }
                 }}
                 className="text-primary hover:underline"
               >
