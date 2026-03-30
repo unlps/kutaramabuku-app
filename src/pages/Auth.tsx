@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Chrome } from "lucide-react";
@@ -23,6 +24,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingSignupEmail, setPendingSignupEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,10 +52,27 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  useEffect(() => {
+    if (signupStep !== "verify" || resendCooldown <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [signupStep, resendCooldown]);
+
   const resetSignupFlow = () => {
     setSignupStep("details");
     setVerificationCode("");
     setPendingSignupEmail("");
+    setResendCooldown(0);
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -92,6 +111,15 @@ const Auth = () => {
         return;
       }
 
+      const { data: emailAvailable, error: emailCheckError } = await (supabase as any).rpc("is_email_available", {
+        p_email: email,
+      });
+
+      if (emailCheckError) throw emailCheckError;
+      if (!emailAvailable) {
+        throw new Error("Este email já está associado a uma conta.");
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -112,6 +140,7 @@ const Auth = () => {
       setPendingSignupEmail(email);
       setVerificationCode("");
       setSignupStep("verify");
+      setResendCooldown(60);
 
       toast({
         title: "Codigo enviado",
@@ -120,6 +149,35 @@ const Auth = () => {
     } catch (error: any) {
       toast({
         title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || !pendingSignupEmail) return;
+
+    setLoading(true);
+
+    try {
+      const { error } = await (supabase.auth as any).resend({
+        type: "signup",
+        email: pendingSignupEmail,
+      });
+
+      if (error) throw error;
+
+      setResendCooldown(60);
+      toast({
+        title: "Codigo reenviado",
+        description: "Enviamos um novo codigo de verificacao para o teu email.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao reenviar",
         description: error.message,
         variant: "destructive",
       });
@@ -202,6 +260,14 @@ const Auth = () => {
     }
   };
 
+  const formatCooldown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const remainingSeconds = (seconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${remainingSeconds}`;
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
@@ -237,22 +303,50 @@ const Auth = () => {
           )}
 
           {signupStep === "verify" ? (
-            <form onSubmit={handleVerifySignupCode} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="verificationCode">Codigo de verificacao</Label>
-                <Input
-                  id="verificationCode"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="123456"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Introduz o codigo de 6 digitos enviado para {pendingSignupEmail || email}.
+            <form onSubmit={handleVerifySignupCode} className="space-y-6">
+              <div className="space-y-3 text-center">
+                <h2 className="text-3xl font-bold tracking-tight text-foreground">Verificar codigo</h2>
+                <p className="text-sm text-muted-foreground">
+                  Introduza o codigo de 6 digitos enviado para <span className="font-medium text-foreground">{pendingSignupEmail || email}</span>.
                 </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="verificationCode" className="sr-only">Codigo de verificacao</Label>
+                <InputOTP
+                  id="verificationCode"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(value) => setVerificationCode(value.replace(/\D/g, "").slice(0, 6))}
+                  containerClassName="justify-center gap-3"
+                  autoFocus
+                  pattern="^[0-9]+$"
+                >
+                  <InputOTPGroup className="gap-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        className="h-14 w-12 rounded-2xl border border-primary/25 bg-background text-lg font-semibold text-foreground shadow-sm transition-all first:rounded-2xl first:border last:rounded-2xl focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/25"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+
+                <div className="text-center text-sm text-muted-foreground">
+                  Nao recebeste o codigo?{" "}
+                  {resendCooldown > 0 ? (
+                    <span className="font-medium text-primary/80">Podes reenviar em {formatCooldown(resendCooldown)}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      Reenviar codigo
+                    </button>
+                  )}
+                </div>
               </div>
 
               <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" disabled={loading}>
