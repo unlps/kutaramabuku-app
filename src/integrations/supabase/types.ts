@@ -715,6 +715,12 @@ export type Database = {
         }
         Returns: string
       }
+      submit_book_for_review: {
+        Args: {
+          p_ebook_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       ebook_type: "standard" | "interactive" | "professional"
@@ -849,4 +855,3 @@ export const Constants = {
     },
   },
 } as const
-

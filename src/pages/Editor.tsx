@@ -65,6 +65,7 @@ export default function Editor() {
   const editorState = useRobustEditor(ebookId || "", reviewState.canEdit);
 
   const { handleExportPDF, handleExportDOCX } = useEditorExport({
+    ebookId: ebookId || "",
     title: ebook?.title || "Sem titulo",
     author: ebook?.author,
     genre: ebook?.genre,
@@ -311,7 +312,7 @@ export default function Editor() {
 
     setSubmitting(true);
     try {
-      await (supabase as any).rpc("submit_book_for_review", {
+      await supabase.rpc("submit_book_for_review", {
         p_ebook_id: ebook.id,
       });
 

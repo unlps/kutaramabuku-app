@@ -1,4 +1,4 @@
-﻿import React, { useRef } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import {
   Bold,
@@ -61,9 +61,25 @@ const ToolbarButton = ({
 );
 
 const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
-  if (!editor) return null;
-
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [, forceUpdate] = useReducer((value: number) => value + 1, 0);
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const refresh = () => forceUpdate();
+    editor.on('selectionUpdate', refresh);
+    editor.on('transaction', refresh);
+    editor.on('update', refresh);
+
+    return () => {
+      editor.off('selectionUpdate', refresh);
+      editor.off('transaction', refresh);
+      editor.off('update', refresh);
+    };
+  }, [editor]);
+
+  if (!editor) return null;
 
   const textStyleAttrs = editor.getAttributes('textStyle') as {
     fontFamily?: string;
@@ -76,10 +92,12 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
 
   const setFontFamily = (font: string) => {
     editor.chain().focus().setMark('textStyle', { fontFamily: font }).run();
+    forceUpdate();
   };
 
   const setFontSize = (size: string) => {
     editor.chain().focus().setMark('textStyle', { fontSize: size }).run();
+    forceUpdate();
   };
 
   const getFontSizeNumber = () => {
@@ -95,11 +113,13 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
   const toggleSuper = () => {
     const active = textStyleAttrs.verticalAlign === 'super';
     editor.chain().focus().setMark('textStyle', { verticalAlign: active ? null : 'super' }).run();
+    forceUpdate();
   };
 
   const toggleSub = () => {
     const active = textStyleAttrs.verticalAlign === 'sub';
     editor.chain().focus().setMark('textStyle', { verticalAlign: active ? null : 'sub' }).run();
+    forceUpdate();
   };
 
   const setLink = () => {
@@ -109,16 +129,19 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
     if (url === null) return;
     if (!url.trim()) {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      forceUpdate();
       return;
     }
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+    forceUpdate();
   };
 
   const addImageByUrl = () => {
     const url = window.prompt('URL da imagem', 'https://');
     if (!url || !url.trim()) return;
     editor.chain().focus().setImage({ src: url.trim() }).run();
+    forceUpdate();
   };
 
   const addImageFromComputer = (file: File) => {
@@ -127,15 +150,16 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
       const src = String(reader.result || '');
       if (!src) return;
       editor.chain().focus().setImage({ src }).run();
+      forceUpdate();
     };
     reader.readAsDataURL(file);
   };
 
   return (
-    <div className="border-b bg-card px-2 py-1.5 sticky top-0 z-30">
+    <div className="sticky top-0 z-30 border-b bg-card px-2 py-1.5">
       <div className="flex flex-wrap items-stretch gap-2">
-        <div className="bg-transparent min-w-[420px] h-[66px] flex flex-col justify-between">
-          <div className="px-1 pt-1 flex flex-wrap items-center gap-1.5">
+        <div className="flex h-[66px] min-w-[420px] flex-col justify-between bg-transparent">
+          <div className="flex flex-wrap items-center gap-1.5 px-1 pt-1">
             <select
               value={currentFont}
               onChange={(e) => setFontFamily(e.target.value)}
@@ -152,7 +176,7 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
             <select
               value={currentSize}
               onChange={(e) => setFontSize(e.target.value)}
-              className="h-7 rounded-md border bg-background px-2 text-sm w-[64px]"
+              className="h-7 w-[64px] rounded-md border bg-background px-2 text-sm"
               title="Tamanho"
             >
               {FONT_SIZES.map((size) => (
@@ -174,27 +198,41 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
             <ToolbarButton onClick={toggleSub} isActive={textStyleAttrs.verticalAlign === 'sub'} title="Subscrito"><Subscript className="h-4 w-4" /></ToolbarButton>
             <ToolbarButton onClick={toggleSuper} isActive={textStyleAttrs.verticalAlign === 'super'} title="Sobrescrito"><Superscript className="h-4 w-4" /></ToolbarButton>
 
-            <label className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-accent cursor-pointer" title="Cor do texto">
+            <label className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md p-0 hover:bg-accent" title="Cor do texto">
               <span className="text-sm">A</span>
-              <input type="color" className="sr-only" onChange={(e) => editor.chain().focus().setColor(e.target.value).run()} />
+              <input
+                type="color"
+                className="sr-only"
+                onChange={(e) => {
+                  editor.chain().focus().setColor(e.target.value).run();
+                  forceUpdate();
+                }}
+              />
             </label>
 
-            <label className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-accent cursor-pointer" title="Realce">
+            <label className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md p-0 hover:bg-accent" title="Realce">
               <span className="text-sm">H</span>
-              <input type="color" className="sr-only" onChange={(e) => editor.chain().focus().setMark('textStyle', { backgroundColor: e.target.value }).run()} />
+              <input
+                type="color"
+                className="sr-only"
+                onChange={(e) => {
+                  editor.chain().focus().setMark('textStyle', { backgroundColor: e.target.value }).run();
+                  forceUpdate();
+                }}
+              />
             </label>
 
             <ToolbarButton onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Limpar formatacao"><Eraser className="h-4 w-4" /></ToolbarButton>
           </div>
           <div className="px-1 pb-0.5">
-            <p className="text-[10px] text-muted-foreground text-center leading-none">Fonte</p>
+            <p className="text-center text-[10px] leading-none text-muted-foreground">Fonte</p>
           </div>
         </div>
 
-        <div className="self-stretch w-px bg-border/70 mx-0.5" />
+        <div className="mx-0.5 self-stretch bg-border/70" style={{ width: '1px' }} />
 
-        <div className="bg-transparent min-w-[380px] h-[66px] flex flex-col justify-between">
-          <div className="px-1 pt-1 flex flex-wrap items-center gap-1">
+        <div className="flex h-[66px] min-w-[380px] flex-col justify-between bg-transparent">
+          <div className="flex flex-wrap items-center gap-1 px-1 pt-1">
             <ToolbarButton onClick={() => editor.chain().focus().setParagraph().run()} isActive={editor.isActive('paragraph')} title="Paragrafo"><Pilcrow className="h-4 w-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Bullets"><List className="h-4 w-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Numeracao"><ListOrdered className="h-4 w-4" /></ToolbarButton>
@@ -240,7 +278,7 @@ const EditorToolbar: React.FC<ToolbarProps> = ({ editor }) => {
             />
           </div>
           <div className="px-1 pb-0.5">
-            <p className="text-[10px] text-muted-foreground text-center leading-none">Paragrafo</p>
+            <p className="text-center text-[10px] leading-none text-muted-foreground">Paragrafo</p>
           </div>
         </div>
       </div>
