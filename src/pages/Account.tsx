@@ -408,7 +408,7 @@ const Account = () => {
   const socialLinksMap = (profile?.social_links as Record<string, string> | null) || {};
   const socialEntries = Object.entries(socialLinksMap).filter(([, value]) => Boolean(value));
   const primaryProfileLink = profile?.website || profile?.social_link;
-  const hasIdentitySection = Boolean(profile?.short_bio || profile?.detailed_bio || profile?.nationality || languagesList.length);
+  const hasIdentitySection = Boolean(profile?.nationality || languagesList.length);
   const hasWritingSection = Boolean(
     profile?.content_type ||
     profile?.writing_style ||
@@ -416,7 +416,7 @@ const Account = () => {
     profile?.author_status ||
     writingGenresList.length
   );
-  const hasPresenceSection = Boolean(primaryProfileLink || socialEntries.length || profile?.is_private !== undefined);
+  const hasPresenceSection = Boolean(primaryProfileLink || socialEntries.length);
   const getSocialMeta = (network: string) => {
     switch (network.toLowerCase()) {
       case 'instagram':
@@ -495,73 +495,69 @@ const Account = () => {
         </div>
 
         {(profile?.short_bio || profile?.detailed_bio || hasIdentitySection || hasWritingSection || hasPresenceSection) && (
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
-            <div className="space-y-4">
-              {profile?.short_bio && <p className="text-base font-semibold leading-relaxed text-foreground">{profile.short_bio}</p>}
-              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">{profile.detailed_bio}</p>}
+          <div className="mt-6 space-y-5">
+            {(profile?.short_bio || profile?.detailed_bio) && <div className="space-y-3">
+              {profile?.short_bio && <p className="text-base font-semibold leading-relaxed text-foreground text-justify">{profile.short_bio}</p>}
+              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground text-justify">{profile.detailed_bio}</p>}
+            </div>}
 
-              <div className="grid gap-4 sm:grid-cols-2 text-sm">
+            {(hasIdentitySection || hasWritingSection || hasPresenceSection) && <div className="grid gap-x-10 gap-y-5 lg:grid-cols-2">
+              <div className="space-y-4 text-sm">
                 {profile?.nationality && <div className="space-y-1">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Nacionalidade</p>
                   <p className="font-medium text-foreground">{profile.nationality}</p>
                 </div>}
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Visibilidade</p>
-                  <p className="font-medium text-foreground">{profile?.is_private ? "Perfil privado" : "Perfil publico"}</p>
-                </div>
                 {profile?.content_type && <div className="space-y-1">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Tipo de conteudo</p>
                   <p className="font-medium text-foreground">{profile.content_type}</p>
-                </div>}
-                {profile?.writing_style && <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Estilo de escrita</p>
-                  <p className="font-medium text-foreground">{profile.writing_style}</p>
                 </div>}
                 {profile?.publisher && <div className="space-y-1">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Editora</p>
                   <p className="font-medium text-foreground">{profile.publisher}</p>
                 </div>}
+                {languagesList.length > 0 && <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Idiomas</p>
+                  <div className="flex flex-wrap gap-2">
+                    {languagesList.map((language) => <Badge key={language} variant="secondary" className="rounded-full">{language}</Badge>)}
+                  </div>
+                </div>}
+              </div>
+
+              <div className="space-y-4 text-sm">
+                {profile?.writing_style && <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Estilo de escrita</p>
+                  <p className="font-medium text-foreground">{profile.writing_style}</p>
+                </div>}
                 {profile?.author_status && <div className="space-y-1">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Status</p>
                   <p className="font-medium text-foreground">{profile.author_status}</p>
                 </div>}
+                {writingGenresList.length > 0 && <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Generos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {writingGenresList.map((genre) => <Badge key={genre} className="rounded-full bg-primary/10 text-primary hover:bg-primary/10">{genre}</Badge>)}
+                  </div>
+                </div>}
+                {(profile?.website || profile?.social_link || socialEntries.length > 0) && <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Links</p>
+                  <div className="flex flex-wrap gap-3">
+                    {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
+                      <Globe className="h-4 w-4" /> Website
+                    </a>}
+                    {!profile?.website && profile?.social_link && <a href={profile.social_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
+                      <Link2 className="h-4 w-4" /> Link principal
+                    </a>}
+                    {socialEntries.map(([network, url]) => {
+                      const socialMeta = getSocialMeta(network);
+                      return <a key={network} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-muted">
+                        {socialMeta.icon}
+                        {socialMeta.label}
+                      </a>;
+                    })}
+                  </div>
+                </div>}
               </div>
-
-              {languagesList.length > 0 && <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Idiomas</p>
-                <div className="flex flex-wrap gap-2">
-                  {languagesList.map((language) => <Badge key={language} variant="secondary" className="rounded-full">{language}</Badge>)}
-                </div>
-              </div>}
-            </div>
-
-            <div className="space-y-4">
-              {writingGenresList.length > 0 && <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Generos</p>
-                <div className="flex flex-wrap gap-2">
-                  {writingGenresList.map((genre) => <Badge key={genre} className="rounded-full bg-primary/10 text-primary hover:bg-primary/10">{genre}</Badge>)}
-                </div>
-              </div>}
-
-              {(profile?.website || profile?.social_link || socialEntries.length > 0) && <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Links</p>
-                <div className="flex flex-wrap gap-3">
-                  {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
-                    <Globe className="h-4 w-4" /> Website
-                  </a>}
-                  {!profile?.website && profile?.social_link && <a href={profile.social_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
-                    <Link2 className="h-4 w-4" /> Link principal
-                  </a>}
-                  {socialEntries.map(([network, url]) => {
-                    const socialMeta = getSocialMeta(network);
-                    return <a key={network} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-muted">
-                      {socialMeta.icon}
-                      {socialMeta.label}
-                    </a>;
-                  })}
-                </div>
-              </div>}
-            </div>
+            </div>}
           </div>
         )}
 
@@ -861,6 +857,7 @@ const Account = () => {
   </div>;
 };
 export default Account;
+
 
 
 
