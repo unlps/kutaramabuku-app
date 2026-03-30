@@ -142,8 +142,17 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeChapterIdRef = useRef<string | null>(null);
+  const chaptersRef = useRef<Chapter[]>([]);
   const { toast } = useToast();
 
+  useEffect(() => {
+    activeChapterIdRef.current = activeChapterId;
+  }, [activeChapterId]);
+
+  useEffect(() => {
+    chaptersRef.current = chapters;
+  }, [chapters]);
   // Initialize TipTap Editor
   const editor = useTipTapEditor({
     extensions: [
@@ -175,7 +184,7 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
       },
     },
     onUpdate: ({ editor }) => {
-      if (activeChapterId) {
+      if (activeChapterIdRef.current) {
         handleContentChange(editor.getHTML());
       }
     },
@@ -231,6 +240,14 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
   }, [ebookId, loadChapters]);
 
   useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  useEffect(() => {
     if (editor) {
       editor.setEditable(isEditable);
     }
@@ -243,7 +260,7 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
       if (chapter) {
         const currentContent = editor.getHTML();
         if (currentContent !== chapter.content) {
-          editor.commands.setContent(chapter.content || '');
+          editor.commands.setContent(chapter.content || '', { emitUpdate: false });
         }
       }
     }
@@ -252,9 +269,10 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
   // Handle content changes with debounced save
   const handleContentChange = useCallback(
     (newContent: string) => {
-      if (!activeChapterId) return;
+      const currentActiveChapterId = activeChapterIdRef.current;
+      if (!currentActiveChapterId) return;
 
-      const currentChapter = chapters.find((ch) => ch.id === activeChapterId);
+      const currentChapter = chaptersRef.current.find((ch) => ch.id === currentActiveChapterId);
       const nextChapterState = extractChapterState(
         currentChapter?.title || 'Novo Capitulo',
         newContent
@@ -263,7 +281,7 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
       // Update local state immediately
       setChapters((prev) =>
         prev.map((ch) =>
-          ch.id === activeChapterId
+          ch.id === currentActiveChapterId
             ? {
                 ...ch,
                 title: nextChapterState.title,
@@ -292,7 +310,7 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
                 content: nextChapterState.content,
                 updated_at: new Date().toISOString(),
               })
-              .eq('id', activeChapterId);
+              .eq('id', currentActiveChapterId);
 
             if (error) throw error;
           }
@@ -303,7 +321,7 @@ export const useRobustEditor = (ebookId: string, isEditable = true) => {
         }
       }, 1500);
     },
-    [activeChapterId, chapters]
+    []
   );
 
   // Select chapter

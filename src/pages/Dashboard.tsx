@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
+import { openStoredEbookExport } from "@/services/ebookDownloadService";
 
 interface Profile {
   full_name: string;
@@ -171,95 +171,7 @@ const Dashboard = () => {
     if (!selectedEbook) return;
 
     try {
-      const htmlToText = (html: string) => {
-        const temp = document.createElement("div");
-        temp.innerHTML = html;
-        return temp.textContent || temp.innerText || "";
-      };
-
-      const { data: chapters } = await supabase
-        .from("chapters")
-        .select("*")
-        .eq("ebook_id", selectedEbook.id)
-        .order("chapter_order", { ascending: true });
-
-      const pdf = new jsPDF();
-      let yPosition = 20;
-
-      if (selectedEbook.cover_image) {
-        try {
-          const img = new Image();
-          img.src = selectedEbook.cover_image;
-          await new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-          });
-
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = pdf.internal.pageSize.getHeight();
-          const imgRatio = img.width / img.height;
-          const pageRatio = pageWidth / pageHeight;
-          let finalWidth: number;
-          let finalHeight: number;
-          let xOffset: number;
-          let yOffset: number;
-
-          if (imgRatio > pageRatio) {
-            finalHeight = pageHeight;
-            finalWidth = finalHeight * imgRatio;
-            xOffset = (pageWidth - finalWidth) / 2;
-            yOffset = 0;
-          } else {
-            finalWidth = pageWidth;
-            finalHeight = finalWidth / imgRatio;
-            xOffset = 0;
-            yOffset = (pageHeight - finalHeight) / 2;
-          }
-
-          pdf.addImage(img, "JPEG", xOffset, yOffset, finalWidth, finalHeight);
-        } catch (error) {
-          console.error("Erro ao adicionar capa ao PDF:", error);
-        }
-      }
-
-      pdf.addPage();
-      pdf.setFontSize(24);
-      const titleLines = pdf.splitTextToSize(htmlToText(selectedEbook.title), 170);
-      pdf.text(titleLines, 20, yPosition);
-      yPosition += titleLines.length * 12 + 20;
-
-      if (selectedEbook.author) {
-        pdf.setFontSize(14);
-        pdf.text(`Escrito por ${selectedEbook.author}`, 20, yPosition);
-      }
-
-      if (selectedEbook.description) {
-        pdf.addPage();
-        yPosition = 20;
-        pdf.setFontSize(12);
-        const descLines = pdf.splitTextToSize(htmlToText(selectedEbook.description), 170);
-        pdf.text(descLines, 20, yPosition);
-      }
-
-      chapters?.forEach((chapter) => {
-        pdf.addPage();
-        yPosition = 20;
-        pdf.setFontSize(18);
-        pdf.text(htmlToText(chapter.title), 20, yPosition);
-        yPosition += 15;
-        pdf.setFontSize(12);
-
-        const contentLines = pdf.splitTextToSize(htmlToText(chapter.content), 170);
-        contentLines.forEach((line: string) => {
-          if (yPosition > 280) {
-            pdf.addPage();
-            yPosition = 20;
-          }
-          pdf.text(line, 20, yPosition);
-          yPosition += 7;
-        });
-      });
-
-      pdf.save(`${htmlToText(selectedEbook.title)}.pdf`);
+      await openStoredEbookExport(selectedEbook.id);
 
       await supabase
         .from("ebooks")
@@ -268,14 +180,14 @@ const Dashboard = () => {
 
       toast({
         title: "Download concluido",
-        description: "O ebook foi baixado com sucesso.",
+        description: "O ebook foi aberto a partir do aplicativo.",
       });
 
       fetchData();
     } catch {
       toast({
         title: "Erro no download",
-        description: "Nao foi possivel fazer o download.",
+        description: "Exporte primeiro o ebook no editor para guardalo no aplicativo.",
         variant: "destructive",
       });
     }

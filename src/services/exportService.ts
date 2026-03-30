@@ -1,7 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak, IRunOptions, ImageRun, ISectionOptions } from 'docx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { saveAs } from 'file-saver';
 
 export interface ExportOptions {
   title: string;
@@ -13,6 +12,8 @@ export interface ExportOptions {
   genre?: string | null;
 }
 
+export const sanitizeFilename = (value: string) =>
+  sanitizeText(value).replace(/[<>:"/\\|?*]/g, '').trim() || 'ebook';
 interface ParsedElement {
   type: 'paragraph' | 'heading1' | 'heading2' | 'heading3' | 'list-item' | 'ordered-item' | 'image' | 'page-break';
   runs: ParsedRun[];
@@ -493,7 +494,7 @@ async function createDocxCoverSection(options: ExportOptions): Promise<ISectionO
   };
 }
 
-export async function exportToDOCX(options: ExportOptions): Promise<void> {
+export async function exportToDOCX(options: ExportOptions): Promise<Blob> {
   const { title, author, content, coverElement, hasCoverPage = true, coverImage, genre } = options;
   
   const parsedContent = parseHtmlContent(content);
@@ -742,12 +743,10 @@ export async function exportToDOCX(options: ExportOptions): Promise<void> {
   
   const doc = new Document({ sections });
   
-  const blob = await Packer.toBlob(doc);
-  const safeTitle = sanitizeText(title).replace(/[<>:"/\\|?*]/g, '').trim() || 'ebook';
-  saveAs(blob, `${safeTitle}.docx`);
+  return Packer.toBlob(doc);
 }
 
-export async function exportToPDF(options: ExportOptions): Promise<void> {
+export async function exportToPDF(options: ExportOptions): Promise<Blob> {
   const { title, author, content, coverElement, hasCoverPage = true, coverImage, genre } = options;
   
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
@@ -1073,6 +1072,5 @@ export async function exportToPDF(options: ExportOptions): Promise<void> {
     yPos += spacingAfter;
   }
   
-  const safeTitle = sanitizeText(title).replace(/[<>:"/\\|?*]/g, '').trim() || 'ebook';
-  pdf.save(`${safeTitle}.pdf`);
+  return pdf.output('blob');
 }
