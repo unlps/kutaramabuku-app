@@ -494,8 +494,78 @@ const Account = () => {
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="mt-4">
+        {(profile?.short_bio || profile?.detailed_bio || hasIdentitySection || hasWritingSection || hasPresenceSection) && (
+          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            <div className="space-y-4">
+              {profile?.short_bio && <p className="text-base font-semibold leading-relaxed text-foreground">{profile.short_bio}</p>}
+              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">{profile.detailed_bio}</p>}
+
+              <div className="grid gap-4 sm:grid-cols-2 text-sm">
+                {profile?.nationality && <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Nacionalidade</p>
+                  <p className="font-medium text-foreground">{profile.nationality}</p>
+                </div>}
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Visibilidade</p>
+                  <p className="font-medium text-foreground">{profile?.is_private ? "Perfil privado" : "Perfil publico"}</p>
+                </div>
+                {profile?.content_type && <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Tipo de conteudo</p>
+                  <p className="font-medium text-foreground">{profile.content_type}</p>
+                </div>}
+                {profile?.writing_style && <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Estilo de escrita</p>
+                  <p className="font-medium text-foreground">{profile.writing_style}</p>
+                </div>}
+                {profile?.publisher && <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Editora</p>
+                  <p className="font-medium text-foreground">{profile.publisher}</p>
+                </div>}
+                {profile?.author_status && <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Status</p>
+                  <p className="font-medium text-foreground">{profile.author_status}</p>
+                </div>}
+              </div>
+
+              {languagesList.length > 0 && <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Idiomas</p>
+                <div className="flex flex-wrap gap-2">
+                  {languagesList.map((language) => <Badge key={language} variant="secondary" className="rounded-full">{language}</Badge>)}
+                </div>
+              </div>}
+            </div>
+
+            <div className="space-y-4">
+              {writingGenresList.length > 0 && <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Generos</p>
+                <div className="flex flex-wrap gap-2">
+                  {writingGenresList.map((genre) => <Badge key={genre} className="rounded-full bg-primary/10 text-primary hover:bg-primary/10">{genre}</Badge>)}
+                </div>
+              </div>}
+
+              {(profile?.website || profile?.social_link || socialEntries.length > 0) && <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Links</p>
+                <div className="flex flex-wrap gap-3">
+                  {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
+                    <Globe className="h-4 w-4" /> Website
+                  </a>}
+                  {!profile?.website && profile?.social_link && <a href={profile.social_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
+                    <Link2 className="h-4 w-4" /> Link principal
+                  </a>}
+                  {socialEntries.map(([network, url]) => {
+                    const socialMeta = getSocialMeta(network);
+                    return <a key={network} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-muted">
+                      {socialMeta.icon}
+                      {socialMeta.label}
+                    </a>;
+                  })}
+                </div>
+              </div>}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6">
           {isOwnProfile ? <Button variant="outline" className="w-full" onClick={() => navigate("/edit-profile")}>
             <Edit2 className="h-4 w-4 mr-2" />
             Editar Perfil
@@ -517,104 +587,6 @@ const Account = () => {
           </Button>}
         </div>
       </Card>
-
-      {/* Profile Details */}
-      {(hasIdentitySection || hasWritingSection || hasPresenceSection) && <div className="grid gap-6 lg:grid-cols-2">
-        {(profile?.short_bio || profile?.detailed_bio) && <Card className="p-6 lg:col-span-2">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sobre</p>
-              {profile?.short_bio && <p className="mt-3 text-lg font-medium leading-relaxed text-foreground">{profile.short_bio}</p>}
-            </div>
-            {profile?.author_status && <Badge variant="secondary" className="self-start rounded-full px-3 py-1">{profile.author_status}</Badge>}
-          </div>
-          {profile?.detailed_bio && <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground">{profile.detailed_bio}</p>}
-        </Card>}
-
-        {hasIdentitySection && <Card className="p-6">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold">Identidade</h3>
-              <p className="text-sm text-muted-foreground">Informacao essencial do autor.</p>
-            </div>
-            <Badge variant="outline" className="rounded-full">{profile?.is_private ? "Perfil privado" : "Perfil publico"}</Badge>
-          </div>
-
-          <div className="mt-5 space-y-4 text-sm">
-            {profile?.nationality && <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Nacionalidade</p>
-              <p className="mt-1 font-medium text-foreground">{profile.nationality}</p>
-            </div>}
-
-            {languagesList.length > 0 && <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Idiomas</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {languagesList.map((language) => <Badge key={language} variant="secondary" className="rounded-full">{language}</Badge>)}
-              </div>
-            </div>}
-          </div>
-        </Card>}
-
-        {hasWritingSection && <Card className="p-6">
-          <div>
-            <h3 className="text-lg font-semibold">Escrita</h3>
-            <p className="text-sm text-muted-foreground">Como este autor se apresenta editorialmente.</p>
-          </div>
-
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 text-sm">
-            {profile?.content_type && <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Tipo de conteudo</p>
-              <p className="mt-1 font-medium text-foreground">{profile.content_type}</p>
-            </div>}
-            {profile?.writing_style && <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Estilo de escrita</p>
-              <p className="mt-1 font-medium text-foreground">{profile.writing_style}</p>
-            </div>}
-            {profile?.publisher && <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Editora</p>
-              <p className="mt-1 font-medium text-foreground">{profile.publisher}</p>
-            </div>}
-            {profile?.author_status && <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Status</p>
-              <p className="mt-1 font-medium text-foreground">{profile.author_status}</p>
-            </div>}
-          </div>
-
-          {writingGenresList.length > 0 && <div className="mt-5">
-            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Generos</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {writingGenresList.map((genre) => <Badge key={genre} className="rounded-full bg-primary/10 text-primary hover:bg-primary/10">{genre}</Badge>)}
-            </div>
-          </div>}
-        </Card>}
-
-        {hasPresenceSection && <Card className="p-6 lg:col-span-2">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Presenca online</h3>
-              <p className="text-sm text-muted-foreground">Canais e links publicos do autor.</p>
-            </div>
-            <Badge variant="outline" className="self-start rounded-full">{profile?.is_private ? "Seguidores por aprovacao" : "Visibilidade aberta"}</Badge>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-3">
-            {profile?.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
-              <Globe className="h-4 w-4" />                      Website
-            </a>}
-            {!profile?.website && profile?.social_link && <a href={profile.social_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted">
-              <Link2 className="h-4 w-4" />                      Link principal
-            </a>}
-            {socialEntries.map(([network, url]) => {
-              const socialMeta = getSocialMeta(network);
-              return <a key={network} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-muted">
-                {socialMeta.icon}
-                {socialMeta.label}
-              </a>;
-            })}
-          </div>
-        </Card>}
-      </div>}
-
       {/* Private Account Message */}
       {!isOwnProfile && profile?.is_private && !isFollowing && (
         <Card className="p-8">
@@ -889,6 +861,7 @@ const Account = () => {
   </div>;
 };
 export default Account;
+
 
 
 
