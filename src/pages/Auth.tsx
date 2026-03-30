@@ -1,190 +1,333 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Chrome } from "lucide-react";
+import { Chrome } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import authBackground from "@/assets/auth-background.png";
 import { authSchema } from "@/lib/validations";
 import { getProfileCompletionStatus } from "@/lib/profile-completion";
+
+type SignupStep = "details" | "verify";
+
 const Auth = () => {
   const appUrl = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
   const [isLogin, setIsLogin] = useState(true);
+  const [signupStep, setSignupStep] = useState<SignupStep>("details");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingSignupEmail, setPendingSignupEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
-  const { theme } = useTheme();
+  const { toast } = useToast();
+
+  const redirectAfterAuth = async () => {
+    const status = await getProfileCompletionStatus();
+    if (!status.hasSession) return;
+
+    navigate(status.isComplete ? "/dashboard" : "/complete-profile", {
+      replace: true,
+    });
+  };
+
   useEffect(() => {
-    const redirectAfterAuth = async () => {
-      const status = await getProfileCompletionStatus();
-      if (!status.hasSession) return;
-
-      navigate(status.isComplete ? "/dashboard" : "/complete-profile", {
-        replace: true
-      });
-    };
-
     redirectAfterAuth();
 
     const {
-      data: {
-        subscription
-      }
+      data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         await redirectAfterAuth();
       }
     });
+
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const resetSignupFlow = () => {
+    setSignupStep("details");
+    setVerificationCode("");
+    setPendingSignupEmail("");
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      // Validate inputs
       const validationResult = authSchema.safeParse({
         email,
         password,
-        fullName: isLogin ? undefined : fullName
+        fullName: isLogin ? undefined : fullName,
       });
 
       if (!validationResult.success) {
         const firstError = validationResult.error.errors[0];
         toast({
-          title: "Erro de validação",
+          title: "Erro de validacao",
           description: firstError.message,
-          variant: "destructive"
+          variant: "destructive",
         });
-        setLoading(false);
         return;
       }
 
       if (isLogin) {
-        const {
-          error
-        } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        if (error) throw error;
-        toast({
-          title: "Bem-vindo de volta!",
-          description: "Você entrou com sucesso."
-        });
-      } else {
-        const {
-          error
-        } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
-          options: {
-            emailRedirectTo: `${appUrl}/`,
-            data: {
-              full_name: fullName
-            }
-          }
         });
+
         if (error) throw error;
+
         toast({
-          title: "Conta criada!",
-          description: "Bem-vindo ao PageSmith Hub."
+          title: "Bem-vindo de volta",
+          description: "Entraste com sucesso.",
         });
+        return;
       }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.session) {
+        await supabase.auth.signOut();
+        throw new Error("Ativa a confirmacao de email no Supabase para exigir o codigo de verificacao.");
+      }
+
+      setPendingSignupEmail(email);
+      setVerificationCode("");
+      setSignupStep("verify");
+
+      toast({
+        title: "Codigo enviado",
+        description: "Introduz o codigo de 6 digitos enviado para o teu email para concluir o registo.",
+      });
     } catch (error: any) {
       toast({
         title: "Erro",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerifySignupCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const normalizedCode = verificationCode.trim();
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      toast({
+        title: "Codigo invalido",
+        description: "Insere um codigo de 6 digitos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const targetEmail = pendingSignupEmail || email;
+      let verifyError: Error | null = null;
+
+      const signupResult = await supabase.auth.verifyOtp({
+        email: targetEmail,
+        token: normalizedCode,
+        type: "signup",
+      });
+      verifyError = signupResult.error;
+
+      if (verifyError) {
+        const fallbackResult = await supabase.auth.verifyOtp({
+          email: targetEmail,
+          token: normalizedCode,
+          type: "email",
+        });
+        verifyError = fallbackResult.error;
+      }
+
+      if (verifyError) throw verifyError;
+
+      toast({
+        title: "Email verificado",
+        description: "Conta confirmada com sucesso.",
+      });
+
+      resetSignupFlow();
+      navigate("/complete-profile", { replace: true });
+    } catch (error: any) {
+      toast({
+        title: "Erro na verificacao",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleAuth = async () => {
     try {
-      const {
-        error
-      } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${appUrl}/dashboard`
-        }
+          redirectTo: `${appUrl}/auth`,
+        },
       });
+
       if (error) throw error;
     } catch (error: any) {
       toast({
         title: "Erro",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
-  return <div className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center" style={{ backgroundImage: `url(${authBackground})` }}>
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
+      style={{ backgroundImage: `url(${authBackground})` }}
+    >
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl shadow-glow p-8 space-y-6">
-          {/* Logo & Title */}
           <div className="text-center space-y-3">
             <img src={logo} alt="Kutara Mabuku" className="w-16 h-16 mx-auto" />
-            
             <p className="text-muted-foreground">
-              {isLogin ? "Bem-vindo de volta! Entre para continuar" : "Crie sua conta para começar"}
+              {isLogin
+                ? "Bem-vindo de volta! Entre para continuar"
+                : signupStep === "verify"
+                  ? "Verifica o teu email para concluir a criacao da conta"
+                  : "Crie sua conta para comecar"}
             </p>
           </div>
 
-          {/* Google Auth */}
-          <Button onClick={handleGoogleAuth} variant="outline" className="w-full" type="button">
-            <Chrome className="mr-2 h-4 w-4" />
-            Continuar com Google
-          </Button>
+          {signupStep !== "verify" && (
+            <>
+              <Button onClick={handleGoogleAuth} variant="outline" className="w-full" type="button">
+                <Chrome className="mr-2 h-4 w-4" />
+                Continuar com Google
+              </Button>
 
-          <div className="relative">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              OR
-            </span>
-          </div>
+              <div className="relative">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                  OR
+                </span>
+              </div>
+            </>
+          )}
 
-          {/* Email Auth Form */}
-          <form onSubmit={handleEmailAuth} className="space-y-4">
-            {!isLogin && <div className="space-y-2">
-                <Label htmlFor="fullName">Nome Completo</Label>
-                <Input id="fullName" type="text" placeholder="João Silva" value={fullName} onChange={e => setFullName(e.target.value)} required={!isLogin} />
-              </div>}
+          {signupStep === "verify" ? (
+            <form onSubmit={handleVerifySignupCode} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="verificationCode">Codigo de verificacao</Label>
+                <Input
+                  id="verificationCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Introduz o codigo de 6 digitos enviado para {pendingSignupEmail || email}.
+                </p>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="voce@exemplo.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" disabled={loading}>
+                {loading ? "A verificar..." : "Verificar codigo"}
+              </Button>
+
+              <Button type="button" variant="outline" className="w-full" disabled={loading} onClick={resetSignupFlow}>
+                Voltar
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nome Completo</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Joao Silva"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={!isLogin}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="voce@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="........"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
+              </div>
+
+              <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" disabled={loading}>
+                {loading ? "Carregando..." : isLogin ? "Entrar" : "Enviar codigo"}
+              </Button>
+            </form>
+          )}
+
+          {signupStep !== "verify" && (
+            <div className="text-center text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  resetSignupFlow();
+                }}
+                className="text-primary hover:underline"
+              >
+                {isLogin ? "Nao tem uma conta? Criar conta" : "Ja tem uma conta? Entrar"}
+              </button>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
-            </div>
-
-            <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" disabled={loading}>
-              {loading ? "Carregando..." : isLogin ? "Entrar" : "Criar Conta"}
-            </Button>
-          </form>
-
-          {/* Toggle Login/Signup */}
-          <div className="text-center text-sm">
-            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline">
-              {isLogin ? "Não tem uma conta? Criar conta" : "Já tem uma conta? Entrar"}
-            </button>
-          </div>
+          )}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
-export default Auth;
 
+export default Auth;
