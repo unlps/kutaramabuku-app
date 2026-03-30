@@ -32,19 +32,20 @@ const STEP_META: Record<StepKey, { title: string; subtitle: string }> = {
   },
   writing: {
     title: "Escrita",
-    subtitle: "Como escreves e que tipo de conteudo publicas.",
+    subtitle: "Como escreves e que tipo de conteúdo publicas.",
   },
   presence: {
-    title: "Presenca online",
+    title: "Presença online",
     subtitle: "Website, redes sociais e visibilidade do perfil.",
   },
   trust: {
-    title: "Confianca",
-    subtitle: "Configuracao avancada e verificacao opcional.",
+    title: "Confiança",
+    subtitle: "Configuração avançada e verificação opcional.",
   },
 };
 
 interface SocialLinksState {
+  [key: string]: string;
   instagram: string;
   facebook: string;
   linkedin: string;
@@ -146,7 +147,7 @@ const CompleteProfile = () => {
       } catch (error: any) {
         toast({
           title: "Erro ao carregar perfil",
-          description: error.message || "Nao foi possivel carregar o onboarding de perfil.",
+          description: error.message || "Não foi possível carregar o onboarding de perfil.",
           variant: "destructive",
         });
       } finally {
@@ -242,7 +243,7 @@ const CompleteProfile = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao guardar perfil",
-        description: error.message || "Nao foi possivel guardar o perfil.",
+        description: error.message || "Não foi possível guardar o perfil.",
         variant: "destructive",
       });
       throw error;
@@ -266,6 +267,14 @@ const CompleteProfile = () => {
 
   const handleBack = () => {
     setCurrentStepIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleSkip = async () => {
+    try {
+      await persistProfile(true);
+    } catch {
+      return;
+    }
   };
 
   const renderToggleGroup = (
@@ -367,16 +376,16 @@ const CompleteProfile = () => {
         return (
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label>Generos</Label>
+              <Label>Géneros</Label>
               {renderToggleGroup(writingGenres, setWritingGenres, GENRE_OPTIONS)}
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Tipo de conteudo</Label>
+                <Label>Tipo de conteúdo</Label>
                 <Select value={contentType || undefined} onValueChange={setContentType}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleciona um tipo de conteudo" />
+                    <SelectValue placeholder="Seleciona um tipo de conteúdo" />
                   </SelectTrigger>
                   <SelectContent>
                     {CONTENT_TYPE_OPTIONS.map((option) => (
@@ -497,11 +506,11 @@ const CompleteProfile = () => {
 
             <div className="flex items-center justify-between rounded-xl border bg-muted/30 p-4">
               <div className="space-y-1">
-                <p className="font-medium">Perfil publico / privado</p>
+                <p className="font-medium">Perfil público / privado</p>
                 <p className="text-sm text-muted-foreground">
                   {isPrivate
-                    ? "O teu perfil fica privado e novos seguidores precisam de aprovacao."
-                    : "O teu perfil fica publico para todos."}
+                    ? "O teu perfil fica privado e novos seguidores precisam de aprovação."
+                    : "O teu perfil fica público para todos."}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -519,9 +528,9 @@ const CompleteProfile = () => {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                 <div className="space-y-2">
-                  <p className="font-medium">Verificacao de identidade (opcional)</p>
+                  <p className="font-medium">Verificação de identidade (opcional)</p>
                   <p className="text-sm text-muted-foreground">
-                    Ativa esta opcao se quiseres sinalizar interesse em verificacao futura da tua identidade.
+                    Ativa esta opção se quiseres sinalizar interesse em verificação futura da tua identidade.
                   </p>
                   <div className="flex items-center gap-3">
                     <Switch
@@ -567,7 +576,7 @@ const CompleteProfile = () => {
           <div>
             <h1 className="text-2xl font-bold">Completa o teu perfil (+ visibilidade)</h1>
             <p className="text-sm text-muted-foreground">
-              Preenche o essencial para terminares a configuracao da tua conta de autor.
+              Preencha agora ou depois para terminares a configuração da tua conta de autor.
             </p>
           </div>
         </div>
@@ -597,22 +606,27 @@ const CompleteProfile = () => {
             <Progress value={progressValue} className="h-2" />
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStepIndex === 0 || saving}
-            >
-              Voltar
-            </Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStepIndex === 0 || saving}
+              >
+                Voltar
+              </Button>
+              <Button type="button" variant="ghost" onClick={handleSkip} disabled={saving}>
+                Saltar
+              </Button>
+            </div>
 
             <Button type="button" onClick={handleNext} disabled={saving}>
               {saving
                 ? "A guardar..."
                 : currentStepIndex === STEP_ORDER.length - 1
                   ? "Concluir perfil"
-                  : "Proxima etapa"}
+                  : "Pr�xima etapa"}
             </Button>
           </div>
         </div>
@@ -622,3 +636,4 @@ const CompleteProfile = () => {
 };
 
 export default CompleteProfile;
+
