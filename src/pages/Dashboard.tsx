@@ -287,14 +287,14 @@ const Dashboard = () => {
         </div>
 
         {/* Continuar a Ler */}
-        {readingProgress.length > 0 && (
-          <div>
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-xl font-bold">
-                <PlayCircle className="h-5 w-5 text-primary" />
-                Continuar a Ler
-              </h3>
-            </div>
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-xl font-bold">
+              <PlayCircle className="h-5 w-5 text-primary" />
+              Continuar a Ler
+            </h3>
+          </div>
+          {readingProgress.length > 0 ? (
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {readingProgress.map((entry) => {
                 const book = entry.ebooks;
@@ -334,8 +334,14 @@ const Dashboard = () => {
                 );
               })}
             </div>
-          </div>
-        )}
+          ) : (
+            <Card className="border-dashed p-6">
+              <p className="text-sm text-muted-foreground">
+                Ainda não começaste a ler nenhum livro. Vai à tua biblioteca e começa a ler!
+              </p>
+            </Card>
+          )}
+        </div>
 
         <div>
           <div className="mb-4 flex items-center justify-between">
