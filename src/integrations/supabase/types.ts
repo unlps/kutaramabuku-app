@@ -403,7 +403,49 @@ export type Database = {
           },
         ]
       }
+      reading_progress: {
+        Row: {
+          created_at: string
+          current_page: number
+          ebook_id: string
+          id: string
+          last_read_at: string
+          progress_percent: number
+          total_pages: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_page?: number
+          ebook_id: string
+          id?: string
+          last_read_at?: string
+          progress_percent?: number
+          total_pages?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_page?: number
+          ebook_id?: string
+          id?: string
+          last_read_at?: string
+          progress_percent?: number
+          total_pages?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_ebook_id_fkey"
+            columns: ["ebook_id"]
+            isOneToOne: false
+            referencedRelation: "ebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_reactions: {
+
         Row: {
           created_at: string
           id: string

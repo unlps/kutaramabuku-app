@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { stripHtml } from "@/lib/utils";
@@ -23,6 +24,7 @@ import {
   Globe,
   Lock,
   Clock,
+  PlayCircle,
 } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
@@ -49,6 +51,19 @@ interface Ebook {
   is_public: boolean | null;
 }
 
+interface ReadingProgressEntry {
+  ebook_id: string;
+  current_page: number;
+  total_pages: number;
+  progress_percent: number;
+  last_read_at: string;
+  ebooks: {
+    id: string;
+    title: string;
+    cover_image: string | null;
+    pages: number | null;
+  } | null;
+}
 
 const formatDate = (value?: string | null) => {
   if (!value) return "-";
@@ -62,6 +77,7 @@ const formatDate = (value?: string | null) => {
 const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ebooks, setEbooks] = useState<Ebook[]>([]);
+  const [readingProgress, setReadingProgress] = useState<ReadingProgressEntry[]>([]);
   const [selectedEbook, setSelectedEbook] = useState<Ebook | null>(null);
   const [submissionMap, setSubmissionMap] = useState<Record<string, LatestSubmission>>({});
   const [stats, setStats] = useState({
@@ -117,6 +133,19 @@ const Dashboard = () => {
       setSubmissionMap(Object.fromEntries(latestSubmissions.entries()));
     }
 
+    // Fetch reading progress (books the user has started reading)
+    const { data: progressData } = await supabase
+      .from("reading_progress")
+      .select("ebook_id, current_page, total_pages, progress_percent, last_read_at, ebooks(id, title, cover_image, pages)")
+      .eq("user_id", session.user.id)
+      .gt("progress_percent", 0)
+      .lt("progress_percent", 100)
+      .order("last_read_at", { ascending: false })
+      .limit(10);
+
+    if (progressData) {
+      setReadingProgress(progressData as ReadingProgressEntry[]);
+    }
   };
 
   const handleDeleteEbook = async () => {
@@ -256,6 +285,57 @@ const Dashboard = () => {
             </div>
           </Card>
         </div>
+
+        {/* Continuar a Ler */}
+        {readingProgress.length > 0 && (
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-xl font-bold">
+                <PlayCircle className="h-5 w-5 text-primary" />
+                Continuar a Ler
+              </h3>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {readingProgress.map((entry) => {
+                const book = entry.ebooks;
+                if (!book) return null;
+                const pct = Math.round(entry.progress_percent);
+                return (
+                  <button
+                    key={entry.ebook_id}
+                    type="button"
+                    className="w-36 flex-shrink-0 cursor-pointer rounded-xl border bg-card p-3 text-left shadow-sm transition-shadow hover:shadow-card focus:outline-none"
+                    onClick={() => navigate(`/book/${entry.ebook_id}`)}
+                  >
+                    {/* Cover */}
+                    <div className="mb-3 aspect-[2/3] overflow-hidden rounded-lg border bg-gradient-primary flex items-center justify-center">
+                      {book.cover_image ? (
+                        <img
+                          src={book.cover_image}
+                          alt={stripHtml(book.title)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <BookOpen className="h-10 w-10 text-white" />
+                      )}
+                    </div>
+                    {/* Title */}
+                    <p className="mb-2 line-clamp-2 text-xs font-semibold leading-snug">
+                      {stripHtml(book.title)}
+                    </p>
+                    {/* Progress bar */}
+                    <div className="space-y-1">
+                      <Progress value={pct} className="h-1.5" />
+                      <p className="text-right text-[10px] font-medium text-muted-foreground">
+                        {pct}%
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <div className="mb-4 flex items-center justify-between">
