@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, Rocket, CalendarClock } from "lucide-react";
+import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, UserCheck, Rocket, CalendarClock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,10 @@ interface Notification {
     book_author_id?: string;
     ebook_title?: string;
     follower_id?: string;
+    follower_name?: string;
+    follower_avatar?: string;
+    acceptor_name?: string;
+    acceptor_avatar?: string;
     submission_id?: string;
     status?: string;
     review_notes?: string;
@@ -149,6 +154,25 @@ const Notifications = () => {
           .update({ status: 'accepted' })
           .eq("follower_id", followerId)
           .eq("following_id", session.user.id);
+
+        // Fetch own profile for the acceptance notification
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url")
+          .eq("id", session.user.id)
+          .single();
+
+        // Notify the follower that request was accepted
+        await supabase.rpc('create_system_notification', {
+          p_user_id: followerId,
+          p_type: 'follow_accepted',
+          p_title: 'Pedido aceite',
+          p_message: `${myProfile?.full_name || 'Um utilizador'} aceitou o teu pedido para seguir`,
+          p_data: {
+            acceptor_name: myProfile?.full_name || null,
+            acceptor_avatar: myProfile?.avatar_url || null,
+          }
+        });
       } else {
         await supabase
           .from("user_follows")
@@ -167,9 +191,9 @@ const Notifications = () => {
       ));
 
       toast({
-        title: accept ? "Pedido aceito" : "Pedido rejeitado",
+        title: accept ? "Pedido aceite" : "Pedido rejeitado",
         description: accept 
-          ? "O usuário agora pode ver seu conteúdo"
+          ? "O utilizador agora pode ver o teu conteúdo"
           : "O pedido de seguir foi rejeitado."
       });
     } catch (error: any) {
@@ -301,12 +325,39 @@ const Notifications = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = (notification: Notification) => {
+    const { type, data } = notification;
+
+    // For follow-related notifications, show the user's avatar
+    if (type === 'follow_request' && (data.follower_avatar || data.follower_name)) {
+      return (
+        <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+          <AvatarImage src={data.follower_avatar} />
+          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+            {data.follower_name?.charAt(0) || <UserPlus className="h-4 w-4" />}
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+
+    if (type === 'follow_accepted' && (data.acceptor_avatar || data.acceptor_name)) {
+      return (
+        <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+          <AvatarImage src={data.acceptor_avatar} />
+          <AvatarFallback className="bg-emerald-500/10 text-emerald-700 text-xs">
+            {data.acceptor_name?.charAt(0) || <UserCheck className="h-4 w-4" />}
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+
     switch (type) {
       case 'collaboration_request':
         return <Users className="h-5 w-5 text-primary" />;
       case 'follow_request':
         return <UserPlus className="h-5 w-5 text-primary" />;
+      case 'follow_accepted':
+        return <UserCheck className="h-5 w-5 text-emerald-600" />;
       case 'submission_reviewed':
         return <BookOpen className="h-5 w-5 text-primary" />;
       case 'book_released':
@@ -361,9 +412,15 @@ const Notifications = () => {
                 )}
               >
                 <div className="flex gap-2 sm:gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    {getNotificationIcon(notification.type)}
-                  </div>
+                  {(notification.type === 'follow_request' || notification.type === 'follow_accepted') ? (
+                    <div className="flex-shrink-0">
+                      {getNotificationIcon(notification)}
+                    </div>
+                  ) : (
+                    <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      {getNotificationIcon(notification)}
+                    </div>
+                  )}
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
@@ -476,6 +533,19 @@ const Notifications = () => {
                       </Button>
                     )}
 
+                    {/* follow_accepted — mark as read */}
+                    {notification.type === 'follow_accepted' && !notification.is_read && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="mt-2 sm:mt-3 h-8 text-xs sm:text-sm"
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        Marcar como lida
+                      </Button>
+                    )}
+
                     {/* Submission reviewed actions */}
                     {notification.type === 'submission_reviewed' && (
                       <div className="mt-3 space-y-3">
@@ -549,7 +619,7 @@ const Notifications = () => {
                     )}
 
                     {/* General actions for other notifications */}
-                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
+                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && notification.type !== 'follow_accepted' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
                       <Button
                         size="sm"
                         variant="ghost"

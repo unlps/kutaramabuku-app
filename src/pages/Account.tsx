@@ -251,13 +251,24 @@ const Account = () => {
           });
           setFollowRequestPending(true);
 
+          // Fetch current user's profile for name/avatar
+          const { data: myProfile } = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("id", currentUserId)
+            .single();
+
           // Create notification for the target user
           await supabase.rpc('create_system_notification', {
             p_user_id: profile.id,
             p_type: 'follow_request',
             p_title: 'Pedido para seguir',
-            p_message: 'AlguÃ©m quer seguir vocÃª',
-            p_data: { follower_id: currentUserId }
+            p_message: `${myProfile?.full_name || 'Alguém'} quer seguir você`,
+            p_data: {
+              follower_id: currentUserId,
+              follower_name: myProfile?.full_name || null,
+              follower_avatar: myProfile?.avatar_url || null,
+            }
           });
 
           toast({
