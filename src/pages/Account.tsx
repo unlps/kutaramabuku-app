@@ -616,19 +616,19 @@ const Account = () => {
     <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
       {/* Profile Header */}
       <Card className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+        <div className="flex flex-col items-center gap-4 text-center">
           <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
             <AvatarImage src={profile?.avatar_url} />
             <AvatarFallback className="bg-gradient-primary text-white text-2xl sm:text-3xl">
               {profile?.full_name?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 text-center sm:text-left w-full">
+          <div className="w-full">
             <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "UsuÃ¡rio"}</h2>
             {profile?.username && <p className="text-muted-foreground text-sm">@{profile.username}</p>}
 
             {/* Stats */}
-            <div className="flex justify-center sm:justify-start gap-4 sm:gap-6 mt-4">
+            <div className="mt-4 flex justify-center gap-4 sm:gap-6">
               <div className="text-center">
                 <div className="text-lg sm:text-xl font-bold">{stats.booksCreated}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Trabalhos</div>
