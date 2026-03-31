@@ -49,14 +49,6 @@ interface Ebook {
   is_public: boolean | null;
 }
 
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  category: string;
-  suggested_pages: string;
-}
 
 const formatDate = (value?: string | null) => {
   if (!value) return "-";
@@ -70,7 +62,6 @@ const formatDate = (value?: string | null) => {
 const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ebooks, setEbooks] = useState<Ebook[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedEbook, setSelectedEbook] = useState<Ebook | null>(null);
   const [submissionMap, setSubmissionMap] = useState<Record<string, LatestSubmission>>({});
   const [stats, setStats] = useState({
@@ -126,8 +117,6 @@ const Dashboard = () => {
       setSubmissionMap(Object.fromEntries(latestSubmissions.entries()));
     }
 
-    const { data: templatesData } = await supabase.from("templates").select("*").limit(3);
-    if (templatesData) setTemplates(templatesData);
   };
 
   const handleDeleteEbook = async () => {
@@ -321,45 +310,6 @@ const Dashboard = () => {
           )}
         </div>
 
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xl font-bold">Explorar por Genero</h3>
-            <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/discover")}>
-              Ver todos <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {["Romance", "Thriller", "Inspiracao", "Ficcao Cientifica", "Misterio", "Fantasia", "Biografia", "Autoajuda"].map((genre) => (
-              <Card
-                key={genre}
-                className="w-36 flex-shrink-0 cursor-pointer bg-gradient-secondary p-6 transition-shadow hover:shadow-card"
-                onClick={() => navigate(`/discover?genre=${genre}`)}
-              >
-                <h4 className="text-center font-semibold text-white">{genre}</h4>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {templates.length > 0 && (
-          <div>
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-bold">Templates</h3>
-              <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/create")}>
-                Usar templates <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {templates.map((template) => (
-                <Card key={template.id} className="border p-5">
-                  <h4 className="font-semibold">{template.name}</h4>
-                  <p className="mt-2 text-sm text-muted-foreground">{template.description}</p>
-                  <p className="mt-3 text-xs text-muted-foreground">Categoria: {template.category}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
       </main>
 
       <BottomNav />
