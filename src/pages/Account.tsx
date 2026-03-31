@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Settings, LogOut, Edit2, BookOpen, Users, UserPlus, UserMinus, Heart, HeartOff, Eye, Download, Edit, Trash2, Star, Globe, Lock, Clock, ArrowLeft, Instagram, Facebook, Linkedin, Twitter, Link2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings, LogOut, Edit2, BookOpen, UserPlus, UserMinus, Heart, HeartOff, Eye, Download, Edit, Trash2, Globe, Lock, Clock, ArrowLeft, Instagram, Facebook, Linkedin, Twitter, Link2 } from "lucide-react";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +41,13 @@ interface Stats {
   following: number;
   booksRead: number;
 }
+
+type SelectedBookSource = "owned" | "wishlist" | "library" | "public";
+
+type LibraryFilter = "all" | "paid" | "free";
+
+type LibrarySort = "recent" | "az" | "za" | "price_desc" | "price_asc";
+
 const Account = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<Stats>({
@@ -53,6 +59,7 @@ const Account = () => {
   const [publicBooks, setPublicBooks] = useState<any[]>([]);
   const [privateBooks, setPrivateBooks] = useState<any[]>([]);
   const [reviewBooks, setReviewBooks] = useState<any[]>([]);
+  const [libraryBooks, setLibraryBooks] = useState<any[]>([]);
   const [submissionMap, setSubmissionMap] = useState<Record<string, LatestSubmission>>({});
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -60,10 +67,9 @@ const Account = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [showBookDialog, setShowBookDialog] = useState(false);
-  const [isWishlistBook, setIsWishlistBook] = useState(false);
-  const {
-    theme
-  } = useTheme();
+  const [selectedBookSource, setSelectedBookSource] = useState<SelectedBookSource>("owned");
+  const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
+  const [librarySort, setLibrarySort] = useState<LibrarySort>("recent");
   const navigate = useNavigate();
   const {
     toast
@@ -160,6 +166,37 @@ const Account = () => {
       if (wishlistData) {
         setWishlist(wishlistData.map(w => w.ebooks));
       }
+
+      const {
+        data: libraryData
+      } = await supabase
+        .from("purchases")
+        .select("price, purchase_date, ebooks(*)")
+        .eq("user_id", session.user.id)
+        .order("purchase_date", {
+          ascending: false
+        });
+
+      if (libraryData) {
+        const uniqueLibraryBooks = new Map<string, any>();
+
+        libraryData.forEach((purchase: any) => {
+          if (!purchase.ebooks?.id || uniqueLibraryBooks.has(purchase.ebooks.id)) {
+            return;
+          }
+
+          uniqueLibraryBooks.set(purchase.ebooks.id, {
+            ...purchase.ebooks,
+            purchase_price: purchase.price,
+            purchase_date: purchase.purchase_date
+          });
+        });
+
+        setLibraryBooks(Array.from(uniqueLibraryBooks.values()));
+      }
+    } else {
+      setWishlist([]);
+      setLibraryBooks([]);
     }
 
     // Check if following (only for other profiles)
@@ -219,7 +256,7 @@ const Account = () => {
             p_user_id: profile.id,
             p_type: 'follow_request',
             p_title: 'Pedido para seguir',
-            p_message: 'Alguém quer seguir você',
+            p_message: 'AlguÃ©m quer seguir vocÃª',
             p_data: { follower_id: currentUserId }
           });
 
@@ -252,8 +289,8 @@ const Account = () => {
   };
   const handleTogglePublic = async (bookId: string, currentStatus: boolean) => {
     toast({
-      title: "Publica��o controlada por revis�o",
-      description: "O livro s� fica p�blico depois de aprovado pelos reviewers."
+      title: "Publicaï¿½ï¿½o controlada por revisï¿½o",
+      description: "O livro sï¿½ fica pï¿½blico depois de aprovado pelos reviewers."
     });
   };
   const handleDeleteEbook = async () => {
@@ -264,7 +301,7 @@ const Account = () => {
     if (error) {
       toast({
         title: "Erro ao apagar",
-        description: "Não foi possível apagar o ebook",
+        description: "NÃ£o foi possÃ­vel apagar o ebook",
         variant: "destructive"
       });
       return;
@@ -287,7 +324,7 @@ const Account = () => {
     if (error) {
       toast({
         title: "Erro",
-        description: "Não foi possível remover da lista de desejos",
+        description: "NÃ£o foi possÃ­vel remover da lista de desejos",
         variant: "destructive"
       });
       return;
@@ -389,14 +426,14 @@ const Account = () => {
         downloads: selectedBook.downloads + 1
       }).eq("id", selectedBook.id);
       toast({
-        title: "Download concluído",
+        title: "Download concluÃ­do",
         description: "O ebook foi baixado com sucesso"
       });
       fetchData();
     } catch (error) {
       toast({
         title: "Erro no download",
-        description: "Não foi possível fazer o download",
+        description: "NÃ£o foi possÃ­vel fazer o download",
         variant: "destructive"
       });
     }
@@ -404,6 +441,9 @@ const Account = () => {
   const isOwnProfile = !userId || userId === currentUserId;
   const selectedBookSubmission = selectedBook ? submissionMap[selectedBook.id] : undefined;
   const selectedBookState = getEbookReviewState(selectedBook?.is_public, selectedBookSubmission);
+  const isOwnedSelectedBook = selectedBookSource === "owned";
+  const isWishlistBook = selectedBookSource === "wishlist";
+  const isLibraryBook = selectedBookSource === "library";
   const languagesList = profile?.languages || [];
   const writingGenresList = profile?.writing_genres || [];
   const writingStyleList = parseDelimitedList(profile?.writing_style);
@@ -434,6 +474,119 @@ const Account = () => {
         return { label: network, icon: <Link2 className='h-4 w-4' /> };
     }
   };
+
+  const filteredLibraryBooks = useMemo(() => {
+    const nextBooks = [...libraryBooks]
+      .filter((book) => {
+        if (libraryFilter === "paid") {
+          return Number(book.purchase_price || 0) > 0;
+        }
+
+        if (libraryFilter === "free") {
+          return Number(book.purchase_price || 0) <= 0;
+        }
+
+        return true;
+      });
+
+    nextBooks.sort((left, right) => {
+      switch (librarySort) {
+        case "az":
+          return stripHtml(left.title || "").localeCompare(stripHtml(right.title || ""), "pt");
+        case "za":
+          return stripHtml(right.title || "").localeCompare(stripHtml(left.title || ""), "pt");
+        case "price_desc":
+          return Number(right.purchase_price || 0) - Number(left.purchase_price || 0);
+        case "price_asc":
+          return Number(left.purchase_price || 0) - Number(right.purchase_price || 0);
+        case "recent":
+        default:
+          return new Date(right.purchase_date || right.created_at || 0).getTime() - new Date(left.purchase_date || left.created_at || 0).getTime();
+      }
+    });
+
+    return nextBooks;
+  }, [libraryBooks, libraryFilter, librarySort]);
+
+  const hasOwnBooks = publicBooks.length + reviewBooks.length + privateBooks.length > 0;
+  const shouldShowOwnTabs = isOwnProfile;
+  const canViewPublicContent = isOwnProfile || !profile?.is_private || isFollowing;
+
+  const openBookDialog = (book: any, source: SelectedBookSource) => {
+    setSelectedBook(book);
+    setSelectedBookSource(source);
+    setShowBookDialog(true);
+  };
+
+  const renderBookCard = (book: any, source: SelectedBookSource) => (
+    <Card
+      key={`${source}-${book.id}`}
+      className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border"
+      onClick={() => openBookDialog(book, source)}
+    >
+      <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
+        {book.cover_image ? (
+          <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
+        ) : (
+          <BookOpen className="h-12 w-12 text-white" />
+        )}
+      </div>
+      <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
+      <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+        {book.author || "Autor Desconhecido"}
+      </p>
+      {source === "library" && (
+        <div className="mb-2">
+          <Badge variant="secondary" className="rounded-full text-[11px]">
+            {Number(book.purchase_price || 0) > 0 ? "Comprado" : "Gratuito"}
+          </Badge>
+        </div>
+      )}
+      {source === "owned" && getEbookReviewState(book.is_public, submissionMap[book.id]).stage === "under_review" ? (
+        <div className="pt-2 border-t">
+          <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+            <Clock className="h-3 w-3" />
+            Em avaliaÃ§Ã£o
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {book.views || 0}
+          </span>
+          <span className="flex items-center gap-1">
+            <Download className="h-3 w-3" />
+            {book.downloads || 0}
+          </span>
+        </div>
+      )}
+    </Card>
+  );
+
+  const renderBookSection = (
+    title: string,
+    books: any[],
+    source: SelectedBookSource,
+    emptyMessage: string,
+    icon?: ReactNode
+  ) => (
+    <section className="space-y-4">
+      <h3 className="text-xl font-bold flex items-center gap-2">
+        {icon}
+        {title} ({books.length})
+      </h3>
+      {books.length > 0 ? (
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {books.map((book) => book && renderBookCard(book, source))}
+        </div>
+      ) : (
+        <Card className="p-6 border-dashed bg-muted/20">
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+        </Card>
+      )}
+    </section>
+  );
   return <div className="min-h-screen bg-background">
     {/* Header */}
     <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -471,7 +624,7 @@ const Account = () => {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 text-center sm:text-left w-full">
-            <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "Usuário"}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "UsuÃ¡rio"}</h2>
             {profile?.username && <p className="text-muted-foreground text-sm">@{profile.username}</p>}
 
             {/* Stats */}
@@ -600,133 +753,130 @@ const Account = () => {
         </Card>
       )}
 
-      {/* Public Books */}
-      {(isOwnProfile || !profile?.is_private || isFollowing) && publicBooks.length > 0 && <div>
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <BookOpen className="h-6 w-5" />
-          Livros Públicos ({publicBooks.length})
-        </h3>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {publicBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
-            setSelectedBook(book);
-            setIsWishlistBook(false);
-            setShowBookDialog(true);
-          }}>
-            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-            </div>
-            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-              {book.author || "Autor Desconhecido"}
-            </p>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {book.views || 0}
-              </span>
-              <span className="flex items-center gap-1">
-                <Download className="h-3 w-3" />
-                {book.downloads || 0}
-              </span>
-            </div>
-          </Card>)}
-        </div>
-      </div>}
+      {shouldShowOwnTabs ? (
+        <Tabs defaultValue="my-books" className="space-y-5">
+          <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-muted/60 p-1">
+            <TabsTrigger value="my-books" className="rounded-lg py-3 text-sm font-semibold">
+              Meus Livros
+            </TabsTrigger>
+            <TabsTrigger value="library" className="rounded-lg py-3 text-sm font-semibold">
+              Biblioteca
+            </TabsTrigger>
+            <TabsTrigger value="wishlist" className="rounded-lg py-3 text-sm font-semibold">
+              Wishlist
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Private Books (only for own profile) */}
-      {isOwnProfile && reviewBooks.length > 0 && <div>
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Livros em Avaliação ({reviewBooks.length})
-        </h3>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {reviewBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
-            setSelectedBook(book);
-            setIsWishlistBook(false);
-            setShowBookDialog(true);
-          }}>
-            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-            </div>
-            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-              {book.author || "Autor Desconhecido"}
-            </p>
-            <div className="pt-2 border-t">
-              <span className="inline-flex items-center gap-1 text-xs text-amber-700">
-                <Clock className="h-3 w-3" />
-                Em avaliação
-              </span>
-            </div>
-          </Card>)}
-        </div>
-      </div>}
+          <TabsContent value="my-books" className="space-y-6">
+            {renderBookSection(
+              "Livros Públicos",
+              publicBooks,
+              "owned",
+              "Ainda não tens livros públicos.",
+              <BookOpen className="h-5 w-5" />
+            )}
+            {renderBookSection(
+              "Livros em Avaliação",
+              reviewBooks,
+              "owned",
+              "Ainda não tens livros em avaliação.",
+              <Clock className="h-5 w-5" />
+            )}
+            {renderBookSection(
+              "Livros Privados",
+              privateBooks,
+              "owned",
+              "Ainda não tens livros privados.",
+              <BookOpen className="h-5 w-5" />
+            )}
 
-      {/* Private Books (only for own profile) */}
-      {isOwnProfile && privateBooks.length > 0 && <div>
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            {!hasOwnBooks && (
+              <Card className="border-dashed p-8">
+                <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-semibold">Ainda não tens livros criados</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Começa do zero ou importa um ficheiro existente para entrares no fluxo de criação.
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate("/create")}>
+                    Começar a criar
+                  </Button>
+                </div>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="library" className="space-y-5">
+            <div className="flex flex-col gap-4 rounded-xl border p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h3 className="text-xl font-bold">Biblioteca ({filteredLibraryBooks.length})</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Livros comprados ou gratuitos já adicionados à tua conta.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant={libraryFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setLibraryFilter("all")}>
+                    Todos
+                  </Button>
+                  <Button variant={libraryFilter === "paid" ? "default" : "outline"} size="sm" onClick={() => setLibraryFilter("paid")}>
+                    Comprados
+                  </Button>
+                  <Button variant={libraryFilter === "free" ? "default" : "outline"} size="sm" onClick={() => setLibraryFilter("free")}>
+                    Gratuitos
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant={librarySort === "recent" ? "secondary" : "ghost"} size="sm" onClick={() => setLibrarySort("recent")}>
+                  Recentes
+                </Button>
+                <Button variant={librarySort === "az" ? "secondary" : "ghost"} size="sm" onClick={() => setLibrarySort("az")}>
+                  A a Z
+                </Button>
+                <Button variant={librarySort === "za" ? "secondary" : "ghost"} size="sm" onClick={() => setLibrarySort("za")}>
+                  Z a A
+                </Button>
+                <Button variant={librarySort === "price_desc" ? "secondary" : "ghost"} size="sm" onClick={() => setLibrarySort("price_desc")}>
+                  Mais caro
+                </Button>
+                <Button variant={librarySort === "price_asc" ? "secondary" : "ghost"} size="sm" onClick={() => setLibrarySort("price_asc")}>
+                  Mais barato
+                </Button>
+              </div>
+            </div>
+
+            {renderBookSection(
+              "Os teus livros da biblioteca",
+              filteredLibraryBooks,
+              "library",
+              "Ainda não tens livros na biblioteca.",
+              <BookOpen className="h-5 w-5" />
+            )}
+          </TabsContent>
+
+          <TabsContent value="wishlist" className="space-y-6">
+            {renderBookSection(
+              "Lista de Desejos",
+              wishlist.filter(Boolean),
+              "wishlist",
+              "Ainda não tens livros na wishlist.",
+              <Heart className="h-5 w-5" />
+            )}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        canViewPublicContent &&
+        renderBookSection(
+          "Livros Públicos",
+          publicBooks,
+          "public",
+          "Este autor ainda não publicou livros visíveis.",
           <BookOpen className="h-5 w-5" />
-          Livros Privados ({privateBooks.length})
-        </h3>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {privateBooks.map(book => <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
-            setSelectedBook(book);
-            setIsWishlistBook(false);
-            setShowBookDialog(true);
-          }}>
-            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-            </div>
-            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-              {book.author || "Autor Desconhecido"}
-            </p>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {book.views || 0}
-              </span>
-              <span className="flex items-center gap-1">
-                <Download className="h-3 w-3" />
-                {book.downloads || 0}
-              </span>
-            </div>
-          </Card>)}
-        </div>
-      </div>}
-
-      {/* Wishlist (only for own profile) */}
-      {isOwnProfile && wishlist.length > 0 && <div>
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Heart className="h-5 w-5" />
-          Lista de Desejos ({wishlist.length})
-        </h3>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {wishlist.map(book => book && <Card key={book.id} className="flex-shrink-0 w-48 p-3 hover:shadow-card transition-shadow cursor-pointer border" onClick={() => {
-            setSelectedBook(book);
-            setIsWishlistBook(true);
-            setShowBookDialog(true);
-          }}>
-            <div className="aspect-[2/3] bg-gradient-primary rounded-lg mb-3 flex items-center justify-center overflow-hidden border">
-              {book.cover_image ? <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" /> : <BookOpen className="h-12 w-12 text-white" />}
-            </div>
-            <h4 className="font-semibold mb-1 text-sm line-clamp-1">{stripHtml(book.title)}</h4>
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-              {book.author || "Autor Desconhecido"}
-            </p>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {book.views || 0}
-              </span>
-              <span className="flex items-center gap-1">
-                <Download className="h-3 w-3" />
-                {book.downloads || 0}
-              </span>
-            </div>
-          </Card>)}
-        </div>
-      </div>}
+        )
+      )}
     </main>
 
     {/* Book Details Dialog */}
@@ -742,7 +892,7 @@ const Account = () => {
               {stripHtml(selectedBook?.title || "")}
             </h2>
             <p className="text-sm text-muted-foreground line-clamp-3">
-              {stripHtml(selectedBook?.description || "Sem descrição")}
+              {stripHtml(selectedBook?.description || "Sem descriÃ§Ã£o")}
             </p>
           </div>
 
@@ -758,14 +908,14 @@ const Account = () => {
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Páginas</p>
+              <p className="text-sm text-muted-foreground">PÃ¡ginas</p>
               <p className="font-medium">{selectedBook?.pages || 0}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Visualizações</p>
+              <p className="text-sm text-muted-foreground">VisualizaÃ§Ãµes</p>
               <p className="font-medium flex items-center gap-1">
                 <Eye className="h-4 w-4" />
                 {selectedBook?.views || 0}
@@ -780,7 +930,7 @@ const Account = () => {
             </div>
           </div>
 
-          {isOwnProfile && !isWishlistBook && <div className="border-t pt-4 space-y-3">
+          {isOwnedSelectedBook && <div className="border-t pt-4 space-y-3">
             <div className="space-y-1">
               <p className="font-medium">Estado editorial</p>
               <div className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${selectedBookState.badgeClassName}`}>
@@ -792,7 +942,7 @@ const Account = () => {
             </div>
             {selectedBookSubmission?.submitted_at && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="text-muted-foreground">Enviado para avalia��o</p>
+                <p className="text-muted-foreground">Enviado para avaliaï¿½ï¿½o</p>
                 <p className="font-medium">
                   {new Date(selectedBookSubmission.submitted_at).toLocaleDateString("pt-PT", {
                     day: "2-digit",
@@ -815,7 +965,7 @@ const Account = () => {
           </div>}
         </div>
 
-        {isOwnProfile && !isWishlistBook ? <DialogFooter className="flex-col sm:flex-row gap-2">
+        {isOwnedSelectedBook ? <DialogFooter className="flex-col sm:flex-row gap-2">
           {selectedBookState.canEdit && <Button variant="destructive" onClick={handleDeleteEbook} className="w-full sm:w-auto">
             <Trash2 className="mr-2 h-4 w-4" />
             Apagar
@@ -850,7 +1000,7 @@ const Account = () => {
             setShowBookDialog(false);
             navigate(`/book/${selectedBook?.id}`);
           }} className="flex-1">
-            Ver Detalhes
+            {isLibraryBook ? "Ler" : "Ver Detalhes"}
           </Button>
         </DialogFooter>}
       </DialogContent>
@@ -861,6 +1011,8 @@ const Account = () => {
   </div>;
 };
 export default Account;
+
+
 
 
 
