@@ -653,7 +653,7 @@ const Account = () => {
           <div className="mx-auto mt-8 w-full max-w-4xl space-y-6">
             {(profile?.short_bio || profile?.detailed_bio) && <div className="space-y-4">
               {profile?.short_bio && <p className="text-base font-semibold leading-relaxed text-foreground text-justify">{profile.short_bio}</p>}
-              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground text-justify">{profile.detailed_bio}</p>}
+              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground text-justify">{profile.detailed_bio}</p>}
             </div>}
 
             {(hasIdentitySection || hasWritingSection || hasPresenceSection) && <div className="border-y border-border/70 py-6">
