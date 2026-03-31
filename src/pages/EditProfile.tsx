@@ -26,8 +26,10 @@ import {
   toggleArrayValue,
   toggleArrayValueWithLimit,
 } from "@/lib/author-profile-options";
+import { hasPublishedBooks } from "@/lib/review-status";
 
 interface SocialLinksState {
+  [key: string]: string;
   instagram: string;
   facebook: string;
   linkedin: string;
@@ -165,6 +167,20 @@ const EditProfile = () => {
 
     setSaving(true);
     try {
+      // Enforce: cannot go private with published books
+      if (isPrivate && sessionUserId) {
+        const hasPublished = await hasPublishedBooks(sessionUserId);
+        if (hasPublished) {
+          toast({
+            title: "Ação bloqueada",
+            description: "Não é possível tornar o perfil privado enquanto existirem obras publicadas.",
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
       const avatarUrl = await uploadAvatarIfNeeded();
       const primarySocialLink =
         socialLinks.instagram || socialLinks.facebook || socialLinks.linkedin || socialLinks.x || null;

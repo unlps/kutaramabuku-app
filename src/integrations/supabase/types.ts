@@ -173,8 +173,10 @@ export type Database = {
           pages: number | null
           preview_content: string | null
           price: number | null
+          publication_status: string
           published_at: string | null
           rating: number | null
+          scheduled_publish_at: string | null
           template_id: string | null
           title: string
           type: Database["public"]["Enums"]["ebook_type"]
@@ -196,8 +198,10 @@ export type Database = {
           pages?: number | null
           preview_content?: string | null
           price?: number | null
+          publication_status?: string
           published_at?: string | null
           rating?: number | null
+          scheduled_publish_at?: string | null
           template_id?: string | null
           title: string
           type: Database["public"]["Enums"]["ebook_type"]
@@ -219,8 +223,10 @@ export type Database = {
           pages?: number | null
           preview_content?: string | null
           price?: number | null
+          publication_status?: string
           published_at?: string | null
           rating?: number | null
+          scheduled_publish_at?: string | null
           template_id?: string | null
           title?: string
           type?: Database["public"]["Enums"]["ebook_type"]
@@ -396,6 +402,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "purchases_ebook_id_fkey"
+            columns: ["ebook_id"]
+            isOneToOne: false
+            referencedRelation: "ebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      release_subscriptions: {
+        Row: {
+          created_at: string
+          ebook_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ebook_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ebook_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_subscriptions_ebook_id_fkey"
             columns: ["ebook_id"]
             isOneToOne: false
             referencedRelation: "ebooks"
@@ -762,6 +797,12 @@ export type Database = {
           p_ebook_id: string
         }
         Returns: string
+      }
+      publish_ebook: {
+        Args: {
+          p_ebook_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

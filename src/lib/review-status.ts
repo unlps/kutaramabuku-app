@@ -22,7 +22,9 @@ export type PublicationStage =
   | "under_review"
   | "changes_requested"
   | "rejected"
-  | "approved";
+  | "approved"
+  | "scheduled"
+  | "published";
 
 export interface EbookReviewState {
   stage: PublicationStage;
@@ -59,13 +61,43 @@ export const loadLatestSubmissions = async (ebookIds: string[]) => {
 
 export const getEbookReviewState = (
   isPublic: boolean | null | undefined,
-  submission?: LatestSubmission | null
+  submission?: LatestSubmission | null,
+  publicationStatus?: string | null
 ): EbookReviewState => {
-  if (isPublic) {
+  // Published state (live and visible to all)
+  if (publicationStatus === "published" || (isPublic && !publicationStatus)) {
+    return {
+      stage: "published",
+      label: "Publicado",
+      description: "Livro publicado e visível para todos. Edição encerrada.",
+      badgeClassName: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+      isLocked: true,
+      canEdit: false,
+      canSubmit: false,
+      readOnlyOnly: true,
+    };
+  }
+
+  // Scheduled state (approved, waiting for release date)
+  if (publicationStatus === "scheduled") {
+    return {
+      stage: "scheduled",
+      label: "Agendado",
+      description: "Publicação agendada. O livro ficará público na data selecionada.",
+      badgeClassName: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+      isLocked: true,
+      canEdit: false,
+      canSubmit: false,
+      readOnlyOnly: true,
+    };
+  }
+
+  // Approved state (approved by reviewers, awaiting author decision to publish)
+  if (publicationStatus === "approved" || submission?.status === "approved") {
     return {
       stage: "approved",
-      label: "Publicado",
-      description: "Livro aprovado e publico. Edicao encerrada.",
+      label: "Aprovado",
+      description: "Livro aprovado pelos reviewers. Publique agora ou agende a publicação.",
       badgeClassName: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
       isLocked: true,
       canEdit: false,
@@ -78,7 +110,7 @@ export const getEbookReviewState = (
     return {
       stage: "draft",
       label: "Rascunho",
-      description: "Livro privado. Ainda nao foi submetido para avaliacao.",
+      description: "Livro privado. Ainda não foi submetido para avaliação.",
       badgeClassName: "bg-slate-500/10 text-slate-700 border-slate-500/20",
       isLocked: false,
       canEdit: true,
@@ -92,8 +124,8 @@ export const getEbookReviewState = (
     case "in_review":
       return {
         stage: "under_review",
-        label: "Em avaliacao",
-        description: "Livro submetido e bloqueado ate resposta dos reviewers.",
+        label: "Em avaliação",
+        description: "Livro submetido e bloqueado até resposta dos reviewers.",
         badgeClassName: "bg-amber-500/10 text-amber-700 border-amber-500/20",
         isLocked: true,
         canEdit: false,
@@ -103,8 +135,8 @@ export const getEbookReviewState = (
     case "revision_requested":
       return {
         stage: "changes_requested",
-        label: "Revisao pedida",
-        description: "Os reviewers pediram alteracoes. Edite e submeta novamente.",
+        label: "Revisão pedida",
+        description: "Os reviewers pediram alterações. Edite e submeta novamente.",
         badgeClassName: "bg-purple-500/10 text-purple-700 border-purple-500/20",
         isLocked: false,
         canEdit: true,
@@ -115,29 +147,18 @@ export const getEbookReviewState = (
       return {
         stage: "rejected",
         label: "Rejeitado",
-        description: "Livro rejeitado. Revise o conteudo antes de submeter novamente.",
+        description: "Livro rejeitado. Revise o conteúdo antes de submeter novamente.",
         badgeClassName: "bg-red-500/10 text-red-700 border-red-500/20",
         isLocked: false,
         canEdit: true,
         canSubmit: true,
         readOnlyOnly: false,
       };
-    case "approved":
-      return {
-        stage: "approved",
-        label: "Publicado",
-        description: "Livro aprovado e publico. Edicao encerrada.",
-        badgeClassName: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-        isLocked: true,
-        canEdit: false,
-        canSubmit: false,
-        readOnlyOnly: true,
-      };
     default:
       return {
         stage: "draft",
         label: "Rascunho",
-        description: "Livro privado. Ainda nao foi submetido para avaliacao.",
+        description: "Livro privado. Ainda não foi submetido para avaliação.",
         badgeClassName: "bg-slate-500/10 text-slate-700 border-slate-500/20",
         isLocked: false,
         canEdit: true,
@@ -145,4 +166,19 @@ export const getEbookReviewState = (
         readOnlyOnly: false,
       };
   }
+};
+
+/**
+ * Check if the given user has any published ebooks.
+ * Used to enforce profile privacy rules.
+ */
+export const hasPublishedBooks = async (userId: string): Promise<boolean> => {
+  const { count, error } = await supabase
+    .from("ebooks")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("publication_status", "published");
+
+  if (error) throw error;
+  return (count ?? 0) > 0;
 };

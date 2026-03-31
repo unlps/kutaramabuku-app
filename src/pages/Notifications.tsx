@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus } from "lucide-react";
+import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, Rocket, CalendarClock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo-new.png";
 import BottomNav from "@/components/BottomNav";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { SchedulePublishDialog } from "@/components/SchedulePublishDialog";
 
 interface Notification {
   id: string;
@@ -34,6 +35,8 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [scheduleTarget, setScheduleTarget] = useState<{ ebookId: string; ebookTitle: string; notificationId: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -59,7 +62,6 @@ const Notifications = () => {
 
       if (error) throw error;
       
-      // Cast the data to our Notification type
       const typedNotifications: Notification[] = (data || []).map(n => ({
         ...n,
         data: (n.data as Notification['data']) || {}
@@ -86,7 +88,6 @@ const Notifications = () => {
         throw new Error("ID do convite não encontrado");
       }
 
-      // Update the book_author status
       const { error: updateError } = await supabase
         .from("book_authors")
         .update({ 
@@ -97,13 +98,11 @@ const Notifications = () => {
 
       if (updateError) throw updateError;
 
-      // Mark notification as read
       await supabase
         .from("notifications")
         .update({ is_read: true })
         .eq("id", notification.id);
 
-      // Update local state
       setNotifications(prev => prev.map(n => 
         n.id === notification.id ? { ...n, is_read: true } : n
       ));
@@ -115,7 +114,6 @@ const Notifications = () => {
           : "O convite foi rejeitado."
       });
 
-      // Optionally navigate to the book editor if accepted
       if (accept && notification.data.ebook_id) {
         setTimeout(() => {
           navigate(`/editor?id=${notification.data.ebook_id}`);
@@ -146,14 +144,12 @@ const Notifications = () => {
       if (!session) throw new Error("Não autenticado");
 
       if (accept) {
-        // Update the follow status to accepted
         await supabase
           .from("user_follows")
           .update({ status: 'accepted' })
           .eq("follower_id", followerId)
           .eq("following_id", session.user.id);
       } else {
-        // Delete the follow request
         await supabase
           .from("user_follows")
           .delete()
@@ -161,13 +157,11 @@ const Notifications = () => {
           .eq("following_id", session.user.id);
       }
 
-      // Mark notification as read
       await supabase
         .from("notifications")
         .update({ is_read: true })
         .eq("id", notification.id);
 
-      // Update local state
       setNotifications(prev => prev.map(n => 
         n.id === notification.id ? { ...n, is_read: true } : n
       ));
@@ -187,6 +181,77 @@ const Notifications = () => {
     } finally {
       setProcessingId(null);
     }
+  };
+
+  /**
+   * Publish an approved book immediately.
+   */
+  const handlePublishNow = async (notification: Notification) => {
+    const ebookId = notification.data.ebook_id;
+    if (!ebookId) return;
+
+    setProcessingId(notification.id);
+    try {
+      // Use the publish_ebook function which also notifies subscribers and forces profile public
+      const { error } = await supabase.rpc("publish_ebook", { p_ebook_id: ebookId });
+      if (error) throw error;
+
+      // Mark notification as read
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", notification.id);
+
+      setNotifications(prev => prev.map(n =>
+        n.id === notification.id ? { ...n, is_read: true } : n
+      ));
+
+      toast({
+        title: "Livro publicado!",
+        description: `"${notification.data.ebook_title}" está agora disponível para todos.`,
+      });
+
+      setTimeout(() => {
+        navigate(`/book/${ebookId}`);
+      }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao publicar",
+        description: error.message || "Não foi possível publicar o livro.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  /**
+   * Open the schedule dialog for an approved book.
+   */
+  const handleOpenSchedule = (notification: Notification) => {
+    if (!notification.data.ebook_id) return;
+    setScheduleTarget({
+      ebookId: notification.data.ebook_id,
+      ebookTitle: notification.data.ebook_title || "Livro",
+      notificationId: notification.id,
+    });
+    setScheduleDialogOpen(true);
+  };
+
+  const handleScheduleCompleted = async () => {
+    if (scheduleTarget) {
+      // Mark notification as read
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", scheduleTarget.notificationId);
+
+      setNotifications(prev => prev.map(n =>
+        n.id === scheduleTarget.notificationId ? { ...n, is_read: true } : n
+      ));
+    }
+    setScheduleTarget(null);
+    loadNotifications();
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -244,6 +309,8 @@ const Notifications = () => {
         return <UserPlus className="h-5 w-5 text-primary" />;
       case 'submission_reviewed':
         return <BookOpen className="h-5 w-5 text-primary" />;
+      case 'book_released':
+        return <Rocket className="h-5 w-5 text-emerald-600" />;
       default:
         return <Bell className="h-5 w-5 text-primary" />;
     }
@@ -409,6 +476,7 @@ const Notifications = () => {
                       </Button>
                     )}
 
+                    {/* Submission reviewed actions */}
                     {notification.type === 'submission_reviewed' && (
                       <div className="mt-3 space-y-3">
                         {(notification.data.review_notes || notification.data.rejection_reason) && (
@@ -421,24 +489,67 @@ const Notifications = () => {
                             )}
                           </div>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs sm:text-sm"
-                          onClick={() =>
-                            notification.data.status === "approved"
-                              ? navigate(`/book/${notification.data.ebook_id}`)
-                              : navigate(`/editor?id=${notification.data.ebook_id}`)
-                          }
-                        >
-                          <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          {notification.data.status === "approved" ? "Ler Livro" : "Abrir Editor"}
-                        </Button>
+
+                        {/* APPROVED: Show Publish Now / Schedule buttons */}
+                        {notification.data.status === "approved" && !notification.is_read ? (
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handlePublishNow(notification)}
+                              disabled={processingId === notification.id}
+                              className="bg-emerald-600 hover:bg-emerald-700 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
+                            >
+                              {processingId === notification.id ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
+                              ) : (
+                                <Rocket className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
+                              Publicar agora
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenSchedule(notification)}
+                              disabled={processingId === notification.id}
+                              className="h-8 text-xs sm:text-sm flex-1 sm:flex-none"
+                            >
+                              <CalendarClock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              Agendar publicação
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs sm:text-sm"
+                            onClick={() =>
+                              notification.data.status === "approved"
+                                ? navigate(`/book/${notification.data.ebook_id}`)
+                                : navigate(`/editor?id=${notification.data.ebook_id}`)
+                            }
+                          >
+                            <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            {notification.data.status === "approved" ? "Ver Livro" : "Abrir Editor"}
+                          </Button>
+                        )}
                       </div>
                     )}
 
+                    {/* Book released notification */}
+                    {notification.type === 'book_released' && notification.data.ebook_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 sm:mt-3 h-8 text-xs sm:text-sm"
+                        onClick={() => navigate(`/book/${notification.data.ebook_id}`)}
+                      >
+                        <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        Ver Livro
+                      </Button>
+                    )}
+
                     {/* General actions for other notifications */}
-                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && notification.type !== 'submission_reviewed' && !notification.is_read && (
+                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -468,6 +579,17 @@ const Notifications = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      {/* Schedule Publish Dialog */}
+      {scheduleTarget && (
+        <SchedulePublishDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          ebookId={scheduleTarget.ebookId}
+          ebookTitle={scheduleTarget.ebookTitle}
+          onScheduled={handleScheduleCompleted}
+        />
+      )}
     </div>
   );
 };

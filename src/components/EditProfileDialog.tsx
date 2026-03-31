@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, Lock, Globe } from "lucide-react";
+import { hasPublishedBooks } from "@/lib/review-status";
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -74,6 +75,20 @@ export const EditProfileDialog = ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
+
+      // Enforce: cannot go private with published books
+      if (isPrivate) {
+        const hasPublished = await hasPublishedBooks(session.user.id);
+        if (hasPublished) {
+          toast({
+            title: "Ação bloqueada",
+            description: "Não é possível tornar o perfil privado enquanto existirem obras publicadas.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
 
       let avatarUrl = profile.avatar_url;
 

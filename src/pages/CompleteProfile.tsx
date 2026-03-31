@@ -27,6 +27,7 @@ import {
   toggleArrayValue,
   toggleArrayValueWithLimit,
 } from "@/lib/author-profile-options";
+import { hasPublishedBooks } from "@/lib/review-status";
 
 type StepKey = "identity" | "writing" | "presence" | "trust";
 
@@ -205,6 +206,20 @@ const CompleteProfile = () => {
 
     setSaving(true);
     try {
+      // Enforce: cannot go private with published books
+      if (isPrivate && sessionUserId) {
+        const hasPublished = await hasPublishedBooks(sessionUserId);
+        if (hasPublished) {
+          toast({
+            title: "Ação bloqueada",
+            description: "Não é possível tornar o perfil privado enquanto existirem obras publicadas.",
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
       const avatarUrl = await uploadAvatarIfNeeded();
 
       const primarySocialLink =
@@ -685,7 +700,7 @@ const CompleteProfile = () => {
                 ? "A guardar..."
                 : currentStepIndex === STEP_ORDER.length - 1
                   ? "Concluir perfil"
-                  : "Pr�xima etapa"}
+                  : "Pr�xima etapa"}
             </Button>
           </div>
         </div>
