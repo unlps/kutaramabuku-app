@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNotificationContext } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils";
 import { SchedulePublishDialog } from "@/components/SchedulePublishDialog";
@@ -51,6 +52,7 @@ const Notifications = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduleTarget, setScheduleTarget] = useState<{ ebookId: string; ebookTitle: string; notificationId: string } | null>(null);
   const [selectedCollaboration, setSelectedCollaboration] = useState<Notification | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { refreshUnreadCount } = useNotificationContext();
@@ -416,6 +418,15 @@ const Notifications = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 pb-24">
+        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="max-w-3xl mx-auto mb-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto rounded-xl bg-muted/60 p-1 mb-6 gap-1">
+            <TabsTrigger value="all" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Todas</TabsTrigger>
+            <TabsTrigger value="social" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Social</TabsTrigger>
+            <TabsTrigger value="colaboracao" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Colaboração</TabsTrigger>
+            <TabsTrigger value="livros" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Livros</TabsTrigger>
+            <TabsTrigger value="submissoes" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Submissões</TabsTrigger>
+          </TabsList>
+
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -429,9 +440,26 @@ const Notifications = () => {
               Você não tem notificações no momento
             </p>
           </div>
-        ) : (
-          <div className="space-y-3 max-w-2xl mx-auto">
-            {notifications.map(notification => (
+        ) : (() => {
+          const filteredNotifications = notifications.filter(n => {
+            if (activeTab === "all") return true;
+            if (activeTab === "social") return ["follow_request", "follow_accepted", "new_follower"].includes(n.type);
+            if (activeTab === "colaboracao") return ["collaboration_invite", "collaboration_accepted", "collaboration_rejected"].includes(n.type);
+            if (activeTab === "livros") return ["book_purchase", "book_released", "book_downloaded"].includes(n.type);
+            if (activeTab === "submissoes") return ["submission_reviewed"].includes(n.type);
+            return true;
+          });
+
+          return filteredNotifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[40vh]">
+              <Bell className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground text-center">
+                Sem notificações nesta secção.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-w-2xl mx-auto">
+              {filteredNotifications.map(notification => (
               <Card
                 key={notification.id}
                 className={cn(
@@ -722,7 +750,9 @@ const Notifications = () => {
               </Card>
             ))}
           </div>
-        )}
+        )
+        })()}
+        </Tabs>
       </main>
 
       {/* Bottom Navigation */}
