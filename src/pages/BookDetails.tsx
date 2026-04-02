@@ -16,6 +16,7 @@ import BottomNav from "@/components/BottomNav";
 import CoverPreview from "@/components/CoverPreview";
 import { CoverTemplate } from "@/components/templates/covers";
 import { stripHtml, sanitizeHtml } from "@/lib/utils";
+import { ensureBookInLibrary } from "@/services/libraryService";
 interface Ebook {
   id: string;
   title: string;
@@ -235,6 +236,7 @@ export default function BookDetails() {
         return sorted;
     }
   };
+  const canDownloadToComputer = !!currentUser && currentUser === book?.user_id;
 
   const handleDownloadFreeBook = async () => {
     if (!book || book.price !== 0) {
@@ -243,6 +245,24 @@ export default function BookDetails() {
     }
 
     try {
+      if (!currentUser) {
+        toast.error("FaÃ§a login para adicionar este livro Ã  tua biblioteca.");
+        navigate("/auth");
+        return;
+      }
+
+      if (!canDownloadToComputer) {
+        await ensureBookInLibrary(book.id, 0);
+        await supabase
+          .from("ebooks")
+          .update({ downloads: (book.downloads || 0) + 1 })
+          .eq("id", book.id);
+
+        toast.success("Livro adicionado a tua biblioteca!");
+        navigate("/account");
+        return;
+      }
+
       toast.info("Preparando download...");
       
       const htmlToText = (html: string) => {
@@ -498,7 +518,11 @@ export default function BookDetails() {
                 disabled={book.price !== 0}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {book.price === 0 ? "Baixar Grátis" : `Comprar - ${book.price?.toFixed(2)} MZN`}
+                {book.price === 0
+                  ? canDownloadToComputer
+                    ? "Baixar para o computador"
+                    : "Adicionar à biblioteca"
+                  : `Comprar - ${book.price?.toFixed(2)} MZN`}
               </Button>
               <Button variant="outline" size="lg" onClick={toggleWishlist} className="flex-1 py-[8px]">
                 <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-current" : ""}`} />
