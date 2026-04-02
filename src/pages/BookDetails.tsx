@@ -16,6 +16,7 @@ import BottomNav from "@/components/BottomNav";
 import CoverPreview from "@/components/CoverPreview";
 import { CoverTemplate } from "@/components/templates/covers";
 import { stripHtml, sanitizeHtml } from "@/lib/utils";
+import { ensureBookInLibrary } from "@/services/libraryService";
 interface Ebook {
   id: string;
   title: string;
@@ -244,6 +245,7 @@ export default function BookDetails() {
 
     try {
       toast.info("Preparando download...");
+      await ensureBookInLibrary(book.id, 0);
       
       const htmlToText = (html: string) => {
         const temp = document.createElement('div');
