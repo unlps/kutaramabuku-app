@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, UserCheck, Rocket, CalendarClock } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, UserCheck, UserX, Rocket, CalendarClock, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logo from "@/assets/logo-new.png";
@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNotificationContext } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils";
 import { SchedulePublishDialog } from "@/components/SchedulePublishDialog";
 
@@ -22,11 +24,16 @@ interface Notification {
     ebook_id?: string;
     book_author_id?: string;
     ebook_title?: string;
+    inviter_id?: string;
+    inviter_name?: string;
+    collaborator_id?: string;
+    collaborator_name?: string;
     follower_id?: string;
     follower_name?: string;
     follower_avatar?: string;
     acceptor_name?: string;
     acceptor_avatar?: string;
+    response_status?: "pending" | "accepted" | "rejected";
     submission_id?: string;
     status?: string;
     review_notes?: string;
@@ -40,13 +47,16 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduleTarget, setScheduleTarget] = useState<{ ebookId: string; ebookTitle: string; notificationId: string } | null>(null);
+  const [selectedCollaboration, setSelectedCollaboration] = useState<Notification | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { refreshUnreadCount } = useNotificationContext();
 
   useEffect(() => {
-    checkAuthAndLoad();
+    void checkAuthAndLoad();
   }, []);
 
   const checkAuthAndLoad = async () => {
@@ -55,10 +65,35 @@ const Notifications = () => {
       navigate("/auth");
       return;
     }
-    loadNotifications();
+    setCurrentUserId(session.user.id);
+    await loadNotifications();
   };
 
-  const loadNotifications = async () => {
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel(`notifications-page-${currentUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        () => {
+          void loadNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [currentUserId, loadNotifications]);
+
+  const loadNotifications = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("notifications")
@@ -72,6 +107,8 @@ const Notifications = () => {
         data: (n.data as Notification['data']) || {}
       }));
       setNotifications(typedNotifications);
+      await refreshUnreadCount();
+      setSelectedCollaboration(null);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar notificações",
@@ -81,7 +118,7 @@ const Notifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [refreshUnreadCount, toast]);
 
   const handleCollaborationResponse = async (notification: Notification, accept: boolean) => {
     setProcessingId(notification.id);
@@ -93,24 +130,14 @@ const Notifications = () => {
         throw new Error("ID do convite não encontrado");
       }
 
-      const { error: updateError } = await supabase
-        .from("book_authors")
-        .update({ 
-          status: accept ? 'accepted' : 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", bookAuthorId);
+      const { error: updateError } = await supabase.rpc("respond_to_collaboration_invite", {
+        p_book_author_id: bookAuthorId,
+        p_accept: accept,
+        p_notification_id: notification.id,
+      });
 
       if (updateError) throw updateError;
-
-      await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("id", notification.id);
-
-      setNotifications(prev => prev.map(n => 
-        n.id === notification.id ? { ...n, is_read: true } : n
-      ));
+      await loadNotifications();
 
       toast({
         title: accept ? "Convite aceito" : "Convite rejeitado",
@@ -118,12 +145,6 @@ const Notifications = () => {
           ? `Agora você pode editar "${notification.data.ebook_title}"`
           : "O convite foi rejeitado."
       });
-
-      if (accept && notification.data.ebook_id) {
-        setTimeout(() => {
-          navigate(`/editor?id=${notification.data.ebook_id}`);
-        }, 1500);
-      }
     } catch (error: any) {
       toast({
         title: "Erro ao processar resposta",
@@ -325,6 +346,10 @@ const Notifications = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
+  const getCollaborationStatus = (notification: Notification) => {
+    return notification.data.response_status || (notification.is_read ? "accepted" : "pending");
+  };
+
   const getNotificationIcon = (notification: Notification) => {
     const { type, data } = notification;
 
@@ -354,6 +379,10 @@ const Notifications = () => {
     switch (type) {
       case 'collaboration_request':
         return <Users className="h-5 w-5 text-primary" />;
+      case 'collaboration_accepted':
+        return <UserCheck className="h-5 w-5 text-emerald-600" />;
+      case 'collaboration_rejected':
+        return <UserX className="h-5 w-5 text-red-600" />;
       case 'follow_request':
         return <UserPlus className="h-5 w-5 text-primary" />;
       case 'follow_accepted':
@@ -450,31 +479,70 @@ const Notifications = () => {
                     </div>
 
                     {/* Collaboration request actions */}
-                    {notification.type === 'collaboration_request' && !notification.is_read && (
-                      <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
-                        <Button
-                          size="sm"
-                          onClick={() => handleCollaborationResponse(notification, true)}
-                          disabled={processingId === notification.id}
-                          className="bg-green-600 hover:bg-green-700 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
-                        >
-                          {processingId === notification.id ? (
-                            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
-                          ) : (
-                            <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    {notification.type === 'collaboration_request' && (
+                      <div className="mt-3 space-y-2 sm:mt-4">
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedCollaboration(notification)}
+                            className="h-8 text-xs sm:text-sm"
+                          >
+                            <Eye className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            Ver detalhes
+                          </Button>
+                          {getCollaborationStatus(notification) === "accepted" && notification.data.ebook_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs sm:text-sm"
+                              onClick={() => navigate(`/editor?id=${notification.data.ebook_id}`)}
+                            >
+                              <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                              Abrir livro
+                            </Button>
                           )}
-                          Aceitar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCollaborationResponse(notification, false)}
-                          disabled={processingId === notification.id}
-                          className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
-                        >
-                          <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          Rejeitar
-                        </Button>
+                        </div>
+
+                        {getCollaborationStatus(notification) === "pending" ? (
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleCollaborationResponse(notification, true)}
+                              disabled={processingId === notification.id}
+                              className="bg-green-600 hover:bg-green-700 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
+                            >
+                              {processingId === notification.id ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
+                              ) : (
+                                <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
+                              Aceitar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCollaborationResponse(notification, false)}
+                              disabled={processingId === notification.id}
+                              className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 h-8 text-xs sm:text-sm flex-1 sm:flex-none"
+                            >
+                              <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              Rejeitar
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "w-fit",
+                              getCollaborationStatus(notification) === "accepted"
+                                ? "border-emerald-500/30 text-emerald-700"
+                                : "border-red-500/30 text-red-600"
+                            )}
+                          >
+                            {getCollaborationStatus(notification) === "accepted" ? "Convite aceite" : "Convite rejeitado"}
+                          </Badge>
+                        )}
                       </div>
                     )}
 
@@ -507,8 +575,7 @@ const Notifications = () => {
                       </div>
                     )}
 
-                    {/* View book button for accepted collaborations */}
-                    {notification.type === 'collaboration_request' && notification.is_read && notification.data.ebook_id && (
+                    {notification.type === 'collaboration_accepted' && notification.data.ebook_id && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -516,7 +583,19 @@ const Notifications = () => {
                         onClick={() => navigate(`/editor?id=${notification.data.ebook_id}`)}
                       >
                         <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        Ver Livro
+                        Abrir livro
+                      </Button>
+                    )}
+
+                    {notification.type === 'collaboration_rejected' && notification.data.ebook_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 sm:mt-3 h-8 text-xs sm:text-sm"
+                        onClick={() => navigate(`/editor?id=${notification.data.ebook_id}`)}
+                      >
+                        <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        Ver livro
                       </Button>
                     )}
 
@@ -649,6 +728,98 @@ const Notifications = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      <Dialog
+        open={!!selectedCollaboration}
+        onOpenChange={(open) => {
+          if (!open) setSelectedCollaboration(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>Convite para colaborar</DialogTitle>
+            <DialogDescription>
+              Detalhes do convite e permissoes da colaboracao.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCollaboration && (
+            <div className="space-y-4 text-sm">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="font-medium">
+                  Livro: {selectedCollaboration.data.ebook_title || "Livro"}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  Convite enviado por {selectedCollaboration.data.inviter_name || "autor"}.
+                </p>
+              </div>
+
+              <div className="space-y-2 text-muted-foreground">
+                <p>Ao aceitar, poderas visualizar e editar o conteudo do livro.</p>
+                <p>Como colaborador, nao poderas publicar, submeter, agendar ou alterar a visibilidade.</p>
+              </div>
+
+              <Badge
+                variant="outline"
+                className={cn(
+                  "w-fit",
+                  getCollaborationStatus(selectedCollaboration) === "accepted"
+                    ? "border-emerald-500/30 text-emerald-700"
+                    : getCollaborationStatus(selectedCollaboration) === "rejected"
+                      ? "border-red-500/30 text-red-600"
+                      : "border-yellow-500/30 text-yellow-700"
+                )}
+              >
+                {getCollaborationStatus(selectedCollaboration) === "accepted"
+                  ? "Aceite"
+                  : getCollaborationStatus(selectedCollaboration) === "rejected"
+                    ? "Rejeitado"
+                    : "Pendente"}
+              </Badge>
+            </div>
+          )}
+
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {selectedCollaboration && getCollaborationStatus(selectedCollaboration) === "pending" && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => void handleCollaborationResponse(selectedCollaboration, false)}
+                  disabled={processingId === selectedCollaboration.id}
+                  className="w-full sm:w-auto"
+                >
+                  Rejeitar
+                </Button>
+                <Button
+                  onClick={() => void handleCollaborationResponse(selectedCollaboration, true)}
+                  disabled={processingId === selectedCollaboration.id}
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                >
+                  {processingId === selectedCollaboration.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Aceitar
+                </Button>
+              </>
+            )}
+            {selectedCollaboration &&
+              getCollaborationStatus(selectedCollaboration) === "accepted" &&
+              selectedCollaboration.data.ebook_id && (
+                <Button
+                  onClick={() => {
+                    navigate(`/editor?id=${selectedCollaboration.data.ebook_id}`);
+                    setSelectedCollaboration(null);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Abrir livro
+                </Button>
+              )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Schedule Publish Dialog */}
       {scheduleTarget && (

@@ -17,6 +17,7 @@ interface EditorHeaderProps {
   canSubmit: boolean;
   submitLabel: string;
   onSubmitForReview: () => void;
+  editorSubtitle?: string;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -33,6 +34,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   canSubmit,
   submitLabel,
   onSubmitForReview,
+  editorSubtitle,
 }) => {
   const navigate = useNavigate();
 
@@ -52,7 +54,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
             <h1 className="text-sm font-medium text-foreground truncate max-w-[220px]">
               {title || "Sem titulo"}
             </h1>
-            <p className="text-xs text-muted-foreground">Editor de Ebook</p>
+            <p className="text-xs text-muted-foreground">{editorSubtitle || "Editor de Ebook"}</p>
           </div>
           <span
             className={`hidden sm:inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusClassName}`}
@@ -62,16 +64,18 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSave}
-            disabled={isSaving || !canSave}
-            className="h-8"
-          >
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            {isSaving ? "Salvando..." : "Salvar"}
-          </Button>
+          {canSave && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSave}
+              disabled={isSaving}
+              className="h-8"
+            >
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          )}
 
           <Button variant="outline" size="sm" onClick={onTogglePreview} className="h-8">
             {isPreviewMode ? (

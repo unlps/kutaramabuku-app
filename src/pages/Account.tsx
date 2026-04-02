@@ -145,15 +145,39 @@ const Account = () => {
       setSubmissionMap(nextSubmissionMap);
 
       setPublicBooks(
-        books.filter((book) => getEbookReviewState(book.is_public, nextSubmissionMap[book.id]).stage === "approved")
+        books.filter(
+          (book) =>
+            getEbookReviewState(
+              book.is_public,
+              nextSubmissionMap[book.id],
+              book.publication_status
+            ).stage === "published"
+        )
       );
       setReviewBooks(
-        books.filter((book) => getEbookReviewState(book.is_public, nextSubmissionMap[book.id]).stage === "under_review")
+        books.filter(
+          (book) =>
+            getEbookReviewState(
+              book.is_public,
+              nextSubmissionMap[book.id],
+              book.publication_status
+            ).stage === "under_review"
+        )
       );
       setPrivateBooks(
         books.filter((book) => {
-          const state = getEbookReviewState(book.is_public, nextSubmissionMap[book.id]);
-          return state.stage === "draft" || state.stage === "changes_requested" || state.stage === "rejected";
+          const state = getEbookReviewState(
+            book.is_public,
+            nextSubmissionMap[book.id],
+            book.publication_status
+          );
+          return (
+            state.stage === "draft" ||
+            state.stage === "changes_requested" ||
+            state.stage === "rejected" ||
+            state.stage === "approved" ||
+            state.stage === "scheduled"
+          );
         })
       );
     }
@@ -451,7 +475,11 @@ const Account = () => {
   };
   const isOwnProfile = !userId || userId === currentUserId;
   const selectedBookSubmission = selectedBook ? submissionMap[selectedBook.id] : undefined;
-  const selectedBookState = getEbookReviewState(selectedBook?.is_public, selectedBookSubmission);
+  const selectedBookState = getEbookReviewState(
+    selectedBook?.is_public,
+    selectedBookSubmission,
+    selectedBook?.publication_status
+  );
   const isOwnedSelectedBook = selectedBookSource === "owned";
   const isWishlistBook = selectedBookSource === "wishlist";
   const isLibraryBook = selectedBookSource === "library";
@@ -553,7 +581,12 @@ const Account = () => {
           </Badge>
         </div>
       )}
-      {source === "owned" && getEbookReviewState(book.is_public, submissionMap[book.id]).stage === "under_review" ? (
+      {source === "owned" &&
+      getEbookReviewState(
+        book.is_public,
+        submissionMap[book.id],
+        book.publication_status
+      ).stage === "under_review" ? (
         <div className="pt-2 border-t">
           <span className="inline-flex items-center gap-1 text-xs text-amber-700">
             <Clock className="h-3 w-3" />
@@ -1018,7 +1051,6 @@ const Account = () => {
   </div>;
 };
 export default Account;
-
 
 
 

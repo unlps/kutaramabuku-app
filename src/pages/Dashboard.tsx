@@ -49,6 +49,7 @@ interface Ebook {
   genre: string | null;
   price: number | null;
   is_public: boolean | null;
+  publication_status: string | null;
 }
 
 interface ReadingProgressEntry {
@@ -153,7 +154,8 @@ const Dashboard = () => {
 
     const selectedState = getEbookReviewState(
       selectedEbook.is_public,
-      submissionMap[selectedEbook.id]
+      submissionMap[selectedEbook.id],
+      selectedEbook.publication_status
     );
 
     if (!selectedState.canEdit) {
@@ -212,11 +214,15 @@ const Dashboard = () => {
   };
 
   const renderStateBadge = (ebook: Ebook) => {
-    const state = getEbookReviewState(ebook.is_public, submissionMap[ebook.id]);
+    const state = getEbookReviewState(
+      ebook.is_public,
+      submissionMap[ebook.id],
+      ebook.publication_status
+    );
     const icon =
-      state.stage === "approved" ? (
+      state.stage === "published" ? (
         <Globe className="h-3 w-3" />
-      ) : state.stage === "under_review" ? (
+      ) : state.stage === "under_review" || state.stage === "scheduled" ? (
         <Clock className="h-3 w-3" />
       ) : (
         <Lock className="h-3 w-3" />
@@ -231,7 +237,11 @@ const Dashboard = () => {
   };
 
   const selectedSubmission = selectedEbook ? submissionMap[selectedEbook.id] : undefined;
-  const selectedState = getEbookReviewState(selectedEbook?.is_public, selectedSubmission);
+  const selectedState = getEbookReviewState(
+    selectedEbook?.is_public,
+    selectedSubmission,
+    selectedEbook?.publication_status
+  );
 
   return (
     <div className="min-h-screen bg-background">

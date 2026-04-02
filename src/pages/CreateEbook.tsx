@@ -160,6 +160,7 @@ const CreateEbook = () => {
         }
       } = await supabase.auth.getSession();
       if (!session) return;
+      const hasCollaboratorInvites = authors.some(author => author.userId && author.userId !== session.user.id);
 
       // Upload cover image if provided
       let coverImageUrl = null;
@@ -213,19 +214,16 @@ const CreateEbook = () => {
         if (chaptersError) throw chaptersError;
       }
 
-      // Create book_authors entries and notifications for collaborators
+      // Register the owner as the primary author entry.
       for (const author of authors) {
-        if (author.userId) {
-          const isCurrentUser = author.userId === session.user.id;
-          
-          // Add to book_authors table - if current user, auto-accept and mark as primary
-          const { data: bookAuthor, error: bookAuthorError } = await supabase
+        if (author.userId === session.user.id) {
+          const { error: bookAuthorError } = await supabase
             .from("book_authors")
             .insert({
               ebook_id: ebook.id,
               user_id: author.userId,
-              status: isCurrentUser ? 'accepted' : 'pending',
-              is_primary: isCurrentUser
+              status: "accepted",
+              is_primary: true
             })
             .select()
             .single();
@@ -249,7 +247,7 @@ const CreateEbook = () => {
 
       toast({
         title: "Ebook criado!",
-        description: authors.some(a => a.userId) 
+        description: hasCollaboratorInvites
           ? "Convites de colaboração enviados. Redirecionando para o editor..."
           : "Redirecionando para o editor..."
       });

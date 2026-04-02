@@ -27,6 +27,7 @@ import {
 
 interface Ebook {
   id: string;
+  user_id: string;
   title: string;
   description: string | null;
   cover_image: string | null;
@@ -35,6 +36,7 @@ interface Ebook {
   genre: string | null;
   price: number | null;
   is_public: boolean | null;
+  publication_status: string | null;
   published_at: string | null;
 }
 
@@ -47,6 +49,7 @@ export default function Editor() {
   const { toast } = useToast();
 
   const [ebook, setEbook] = useState<Ebook | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [latestSubmission, setLatestSubmission] = useState<LatestSubmission | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,9 +61,13 @@ export default function Editor() {
   const [step, setStep] = useState<EditorStep>("editor");
 
   const reviewState = useMemo(
-    () => getEbookReviewState(ebook?.is_public, latestSubmission),
-    [ebook?.is_public, latestSubmission]
+    () => getEbookReviewState(ebook?.is_public, latestSubmission, ebook?.publication_status),
+    [ebook?.is_public, ebook?.publication_status, latestSubmission]
   );
+
+  const isOwner = ebook?.user_id === currentUserId;
+  const canManageBook = Boolean(isOwner && reviewState.canEdit);
+  const canSubmitBook = Boolean(isOwner && reviewState.canSubmit);
 
   const editorState = useRobustEditor(ebookId || "", reviewState.canEdit);
 
@@ -83,6 +90,7 @@ export default function Editor() {
         navigate("/auth");
         return;
       }
+      setCurrentUserId(session.user.id);
 
       const { data: ebookData, error: ebookError } = await supabase
         .from("ebooks")
@@ -129,10 +137,12 @@ export default function Editor() {
   }, [reviewState.readOnlyOnly]);
 
   const handleMetadataContinue = async (updatedEbook: Ebook, newCoverImage: File | null) => {
-    if (!reviewState.canEdit) {
+    if (!canManageBook) {
       toast({
         title: "Edição bloqueada",
-        description: reviewState.description,
+        description: isOwner
+          ? reviewState.description
+          : "Colaboradores podem editar o conteudo, mas nao podem alterar informacoes do livro.",
         variant: "destructive",
       });
       return;
@@ -202,10 +212,12 @@ export default function Editor() {
   const handleSave = async () => {
     if (!ebook) return;
 
-    if (!reviewState.canEdit) {
+    if (!canManageBook) {
       toast({
         title: "Edição bloqueada",
-        description: reviewState.description,
+        description: isOwner
+          ? reviewState.description
+          : "Colaboradores nao podem alterar configuracoes editoriais do livro.",
         variant: "destructive",
       });
       return;
@@ -251,10 +263,12 @@ export default function Editor() {
   const handleTemplateContinue = async () => {
     if (!ebook) return;
 
-    if (!reviewState.canEdit) {
+    if (!canManageBook) {
       toast({
         title: "Edição bloqueada",
-        description: reviewState.description,
+        description: isOwner
+          ? reviewState.description
+          : "Colaboradores nao podem alterar o template ou a capa do livro.",
         variant: "destructive",
       });
       return;
@@ -300,6 +314,17 @@ export default function Editor() {
 
   const handleSubmitForReview = async () => {
     if (!ebook) return;
+
+    if (!canSubmitBook) {
+      toast({
+        title: "Submissao restrita",
+        description: isOwner
+          ? reviewState.description
+          : "Apenas o criador do livro pode submeter para publicacao.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!coverImage && coverTemplate === "none") {
       toast({
@@ -499,14 +524,15 @@ export default function Editor() {
         isPreviewMode={isPreviewMode}
         statusLabel={reviewState.label}
         statusClassName={reviewState.badgeClassName}
-        canSave={reviewState.canEdit}
-        canSubmit={reviewState.canSubmit}
+        canSave={canManageBook}
+        canSubmit={canSubmitBook}
         submitLabel={submitLabel}
         onSubmitForReview={() => setShowSubmitDialog(true)}
+        editorSubtitle={isOwner ? "Editor de Ebook" : "Colaborador"}
       />
 
       <div className="border-b bg-card/50 px-4 py-2 flex items-center gap-4 flex-wrap">
-        {reviewState.canEdit ? (
+        {canManageBook ? (
           <>
             <Button
               variant="ghost"
@@ -521,6 +547,10 @@ export default function Editor() {
               Editar Template: {coverTemplate !== "none" ? coverTemplate : "Nenhum"}
             </Button>
           </>
+        ) : reviewState.canEdit ? (
+          <span className="text-sm text-muted-foreground">
+            Podes editar os capitulos, mas nao gerir publicacao, visibilidade ou metadados.
+          </span>
         ) : (
           <span className="text-sm text-muted-foreground">{reviewState.description}</span>
         )}
