@@ -244,8 +244,25 @@ export default function BookDetails() {
     }
 
     try {
+      if (!currentUser) {
+        toast.error("FaÃ§a login para adicionar este livro Ã  tua biblioteca.");
+        navigate("/auth");
+        return;
+      }
+
+      if (currentUser && currentUser !== book.user_id) {
+        await ensureBookInLibrary(book.id, 0);
+        await supabase
+          .from("ebooks")
+          .update({ downloads: (book.downloads || 0) + 1 })
+          .eq("id", book.id);
+
+        toast.success("Livro adicionado a tua biblioteca!");
+        navigate("/account");
+        return;
+      }
+
       toast.info("Preparando download...");
-      await ensureBookInLibrary(book.id, 0);
       
       const htmlToText = (html: string) => {
         const temp = document.createElement('div');
