@@ -37,6 +37,17 @@ interface ParsedRun {
   verticalAlign?: 'super' | 'sub';
 }
 
+interface PdfStyledSegment {
+  text: string;
+  width: number;
+  fontSize: number;
+  fontStyle: 'normal' | 'bold' | 'italic' | 'bolditalic';
+  color: [number, number, number];
+  underline?: boolean;
+  strike?: boolean;
+  verticalAlign?: 'super' | 'sub';
+}
+
 // Sanitize text to remove HTML tags and normalize whitespace
 function sanitizeText(text: string): string {
   return text
@@ -49,6 +60,116 @@ function sanitizeText(text: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function parsePdfColor(color?: string): [number, number, number] {
+  if (!color) return [0, 0, 0];
+
+  const normalized = color.trim().toLowerCase();
+  const hexMatch = normalized.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const raw = hexMatch[1];
+    const hex = raw.length === 3 ? raw.split('').map((char) => char + char).join('') : raw;
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16),
+    ];
+  }
+
+  const rgbMatch = normalized.match(/^rgba?\(([^)]+)\)$/);
+  if (rgbMatch) {
+    const [r = 0, g = 0, b = 0] = rgbMatch[1]
+      .split(',')
+      .slice(0, 3)
+      .map((value) => Math.max(0, Math.min(255, parseInt(value.trim(), 10) || 0)));
+    return [r, g, b];
+  }
+
+  return [0, 0, 0];
+}
+
+function getPdfFontSize(run: ParsedRun, elementType: ParsedElement['type']): number {
+  if (elementType === 'heading1') return 24;
+  if (elementType === 'heading2') return 18;
+  if (elementType === 'heading3') return 14;
+
+  const parsed = parseFloat((run.fontSize || '').replace('px', '').trim());
+  if (!Number.isNaN(parsed) && parsed > 0) {
+    return Math.max(8, Math.min(32, parsed * 0.75));
+  }
+
+  return 12;
+}
+
+function getPdfFontStyle(run: ParsedRun, isHeading: boolean): PdfStyledSegment['fontStyle'] {
+  if (isHeading) return 'bold';
+  if (run.bold && run.italic) return 'bolditalic';
+  if (run.bold) return 'bold';
+  if (run.italic) return 'italic';
+  return 'normal';
+}
+
+function buildPdfSegments(
+  pdf: jsPDF,
+  element: ParsedElement,
+  listPrefix: string
+): PdfStyledSegment[] {
+  const isHeading = element.type.startsWith('heading');
+  const baseSegments: ParsedRun[] = listPrefix ? [{ text: listPrefix }, ...element.runs] : element.runs;
+  const segments: PdfStyledSegment[] = [];
+
+  for (const run of baseSegments) {
+    const pieces = run.text.match(/\S+|\s+/g) || [run.text];
+    for (const piece of pieces) {
+      const fontSize = getPdfFontSize(run, element.type);
+      const fontStyle = getPdfFontStyle(run, isHeading);
+      pdf.setFont('helvetica', fontStyle);
+      pdf.setFontSize(fontSize);
+
+      segments.push({
+        text: piece,
+        width: pdf.getTextWidth(piece),
+        fontSize,
+        fontStyle,
+        color: parsePdfColor(run.color),
+        underline: run.underline,
+        strike: run.strike,
+        verticalAlign: run.verticalAlign,
+      });
+    }
+  }
+
+  return segments;
+}
+
+function wrapPdfSegments(segments: PdfStyledSegment[], maxWidth: number): PdfStyledSegment[][] {
+  const lines: PdfStyledSegment[][] = [];
+  let currentLine: PdfStyledSegment[] = [];
+  let currentWidth = 0;
+
+  for (const segment of segments) {
+    const isWhitespace = segment.text.trim().length === 0;
+
+    if (currentLine.length === 0 && isWhitespace) {
+      continue;
+    }
+
+    if (!isWhitespace && currentWidth + segment.width > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [];
+      currentWidth = 0;
+    }
+
+    currentLine.push(segment);
+    currentWidth += segment.width;
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines;
 }
 
 function parseHtmlContent(html: string): ParsedElement[] {
@@ -291,6 +412,96 @@ async function waitForImages(element: HTMLElement, timeout = 3000): Promise<void
     });
   });
   await Promise.all(promises);
+}
+
+function splitHtmlSectionsForPdf(html: string): string[] {
+  return html
+    .split(/<div[^>]*data-page-break=["']chapter["'][^>]*><\/div>/gi)
+    .map((section) => section.trim())
+    .filter(Boolean);
+}
+
+async function renderHtmlSectionToPdf(
+  pdf: jsPDF,
+  html: string,
+  pageWidth: number,
+  pageHeight: number,
+  margin: number
+): Promise<void> {
+  const pixelsPerPoint = 96 / 72;
+  const cssWidthPx = Math.round((pageWidth - margin * 2) * pixelsPerPoint);
+  const cssPaddingPx = Math.round(18 * pixelsPerPoint);
+
+  const container = document.createElement('div');
+  container.className = 'prose prose-sm sm:prose-base lg:prose-lg max-w-none';
+  container.style.position = 'fixed';
+  container.style.left = '-20000px';
+  container.style.top = '0';
+  container.style.width = `${cssWidthPx}px`;
+  container.style.padding = `${cssPaddingPx}px`;
+  container.style.background = '#ffffff';
+  container.style.color = '#000000';
+  container.style.boxSizing = 'border-box';
+  container.innerHTML = html;
+
+  document.body.appendChild(container);
+
+  try {
+    await waitForImages(container, 5000);
+
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      imageTimeout: 5000,
+    });
+
+    const printableWidth = pageWidth - margin * 2;
+    const printableHeight = pageHeight - margin * 2;
+    const sliceHeightPx = Math.max(1, Math.floor(canvas.width * (printableHeight / printableWidth)));
+
+    for (let offsetY = 0, index = 0; offsetY < canvas.height; offsetY += sliceHeightPx, index++) {
+      const currentSliceHeight = Math.min(sliceHeightPx, canvas.height - offsetY);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = currentSliceHeight;
+
+      const sliceContext = sliceCanvas.getContext('2d');
+      if (!sliceContext) continue;
+
+      sliceContext.fillStyle = '#ffffff';
+      sliceContext.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+      sliceContext.drawImage(
+        canvas,
+        0,
+        offsetY,
+        canvas.width,
+        currentSliceHeight,
+        0,
+        0,
+        canvas.width,
+        currentSliceHeight
+      );
+
+      if (index > 0) {
+        pdf.addPage();
+      }
+
+      const renderedHeight = printableWidth * (currentSliceHeight / canvas.width);
+      pdf.addImage(
+        sliceCanvas.toDataURL('image/png'),
+        'PNG',
+        margin,
+        margin,
+        printableWidth,
+        renderedHeight
+      );
+    }
+  } finally {
+    document.body.removeChild(container);
+  }
 }
 
 // Convert image to base64 via canvas (works for CORS-blocked images)
@@ -887,6 +1098,24 @@ export async function exportToPDF(options: ExportOptions): Promise<Blob> {
     
     pdf.addPage();
     yPos = margin;
+  }
+
+  try {
+    const sections = splitHtmlSectionsForPdf(content);
+
+    if (sections.length > 0) {
+      for (let index = 0; index < sections.length; index++) {
+        if (index > 0) {
+          pdf.addPage();
+        }
+
+        await renderHtmlSectionToPdf(pdf, sections[index], pageWidth, pageHeight, margin);
+      }
+
+      return pdf.output('blob');
+    }
+  } catch (renderError) {
+    console.error('High fidelity PDF render failed, falling back to manual parser:', renderError);
   }
   
   const parsedContent = parseHtmlContent(content);
