@@ -1,10 +1,13 @@
 import { Home, Search, Plus, Bell, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { useNotificationContext } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils";
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { unreadCount } = useNotificationContext();
 
   const navItems = [
     { id: "home", label: "Início", icon: Home, path: "/dashboard" },
@@ -33,7 +36,14 @@ const BottomNav = () => {
                   active ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Icon className="h-6 w-6" />
+                <span className="relative">
+                  <Icon className="h-6 w-6" />
+                  {item.id === "notifications" && unreadCount > 0 && (
+                    <Badge className="absolute -right-2.5 -top-2 min-w-5 rounded-full px-1.5 py-0 text-[10px] leading-5">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Badge>
+                  )}
+                </span>
                 <span className="text-xs font-medium">{item.label}</span>
               </button>
             );
