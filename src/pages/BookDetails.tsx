@@ -430,9 +430,9 @@ export default function BookDetails() {
           {/* Left - Book Cover */}
           <Dialog>
             <DialogTrigger asChild>
-              <div className="w-36 h-52 rounded-lg overflow-hidden mx-auto md:mx-0 cursor-pointer hover:opacity-90 transition-opacity shadow-md border border-border">
+              <div className="w-full max-w-[192px] aspect-[1/1.414] rounded-lg overflow-hidden mx-auto md:mx-0 cursor-pointer hover:opacity-90 transition-opacity shadow-md border border-border bg-muted/20">
                 {book.template_id && book.template_id !== 'none' ? (
-                  <div className="w-full h-full" style={{ transform: 'scale(0.132)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
+                  <div className="w-full h-full" style={{ transform: 'scale(0.235)', transformOrigin: 'top left', width: '8.5in', height: '11in' }}>
                     <CoverPreview
                       template={(book.template_id as CoverTemplate) || 'classic'}
                       title={stripHtml(book.title)}
@@ -502,11 +502,6 @@ export default function BookDetails() {
                     </span>
                   </div>}
               </div>
-
-              {book.formats && book.formats.length > 0 && <div className="mb-6">
-                  <span className="text-sm font-medium">Formatos disponíveis: </span>
-                  <span className="text-sm">{book.formats.join(", ")}</span>
-                </div>}
             </div>
 
             {/* Action Buttons */}
