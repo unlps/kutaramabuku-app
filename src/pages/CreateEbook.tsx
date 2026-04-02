@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, BookOpen, Upload, Sparkles, ArrowRight, X } from "lucide-react";
 import logo from "@/assets/logo-new.png";
@@ -20,17 +19,20 @@ interface Author {
   id: string;
   name: string;
   userId?: string;
-  status?: 'pending' | 'accepted' | 'rejected';
+  status?: "pending" | "accepted" | "rejected";
   isNew?: boolean;
 }
+
 type WizardStep = "origin" | "upload" | "mapping" | "metadata" | "template" | "complete";
 type OriginType = "blank" | "import";
+
 interface ParsedChapter {
   id: string;
   title: string;
   content: string;
   order: number;
 }
+
 const CreateEbook = () => {
   const [step, setStep] = useState<WizardStep>("origin");
   const [origin, setOrigin] = useState<OriginType | null>(null);
@@ -45,95 +47,75 @@ const CreateEbook = () => {
   const [parsedChapters, setParsedChapters] = useState<ParsedChapter[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
-  const [genres, setGenres] = useState<{
-    id: string;
-    name: string;
-  }[]>([]);
+  const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [priceType, setPriceType] = useState<"unselected" | "free" | "paid">("unselected");
   const [price, setPrice] = useState<string>("0");
+
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+
   useEffect(() => {
-    checkUser();
-    loadUserProfile();
-    fetchGenres();
+    void checkUser();
+    void loadUserProfile();
+    void fetchGenres();
   }, []);
+
   useEffect(() => {
     if (!coverImage) {
       setCoverPreviewUrl(null);
       return;
     }
-
     const objectUrl = URL.createObjectURL(coverImage);
     setCoverPreviewUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [coverImage]);
+
   const fetchGenres = async () => {
-    const {
-      data
-    } = await supabase.from("genres").select("*").order("name");
-    if (data) {
-      setGenres(data);
-    }
+    const { data } = await supabase.from("genres").select("*").order("name");
+    if (data) setGenres(data);
   };
+
   const checkUser = async () => {
-    const {
-      data: {
-        session
-      }
-    } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) navigate("/auth");
   };
+
   const loadUserProfile = async () => {
-    const {
-      data: {
-        session
-      }
-    } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      const {
-        data: profile
-      } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", session.user.id)
+        .single();
       if (profile?.full_name) {
-        // Add current user as author with their userId for proper tracking
-        setAuthors([{ 
-          id: crypto.randomUUID(), 
+        setAuthors([{
+          id: crypto.randomUUID(),
           name: profile.full_name,
           userId: session.user.id,
-          status: 'accepted'
+          status: "accepted",
         }]);
       }
     }
   };
+
   const handleCreateEbook = async () => {
     if (!coverImage && selectedTemplate === "none") {
       toast({
         title: "Template obrigatório",
         description: "Sem imagem de capa, selecione um template diferente de Nenhum.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     // Validate ebook metadata
-    const authorNames = authors.map(a => a.name).join(', ');
-    const validationResult = ebookSchema.safeParse({
-      title,
-      description,
-      author: authorNames
-    });
+    const authorNames = authors.map((a) => a.name).join(", ");
+    const validationResult = ebookSchema.safeParse({ title, description, author: authorNames });
     if (!validationResult.success) {
       const firstError = validationResult.error.errors[0];
-      toast({
-        title: "Erro de validação",
-        description: firstError.message,
-        variant: "destructive"
-      });
+      toast({ title: "Erro de validação", description: firstError.message, variant: "destructive" });
       return;
     }
 
@@ -146,102 +128,91 @@ const CreateEbook = () => {
           toast({
             title: "Erro de validação no capítulo",
             description: `${chapter.title}: ${firstError.message}`,
-            variant: "destructive"
+            variant: "destructive",
           });
           return;
         }
       }
     }
+
     setLoading(true);
     try {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const hasCollaboratorInvites = authors.some(author => author.userId && author.userId !== session.user.id);
+
+      const hasCollaboratorInvites = authors.some(
+        (author) => author.userId && author.userId !== session.user.id
+      );
 
       // Upload cover image if provided
-      let coverImageUrl = null;
+      let coverImageUrl: string | null = null;
       if (coverImage) {
-        const fileExt = coverImage.name.split('.').pop();
+        const fileExt = coverImage.name.split(".").pop();
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${session.user.id}/${fileName}`;
-        const {
-          error: uploadError
-        } = await supabase.storage.from('ebook-covers').upload(filePath, coverImage);
+        const { error: uploadError } = await supabase.storage
+          .from("ebook-covers")
+          .upload(filePath, coverImage);
         if (!uploadError) {
-          const {
-            data: {
-              publicUrl
-            }
-          } = supabase.storage.from('ebook-covers').getPublicUrl(filePath);
+          const { data: { publicUrl } } = supabase.storage
+            .from("ebook-covers")
+            .getPublicUrl(filePath);
           coverImageUrl = publicUrl;
         }
       }
 
       // Create ebook
-      const {
-        data: ebook,
-        error
-      } = await supabase.from("ebooks").insert({
-        user_id: session.user.id,
-        title,
-        description,
-        author: authors.map(a => a.name).join(', '),
-        type: "standard",
-        template_id: selectedTemplate,
-        cover_image: coverImageUrl,
-        genre: selectedGenre || null,
-        price: priceType === "free" ? 0 : parseFloat(price) || 0,
-        pages: origin === "import" ? parsedChapters.length : 0,
-        is_public: false
-      }).select().single();
+      const { data: ebook, error } = await supabase
+        .from("ebooks")
+        .insert({
+          user_id: session.user.id,
+          title,
+          description,
+          author: authors.map((a) => a.name).join(", "),
+          type: "standard",
+          template_id: selectedTemplate,
+          cover_image: coverImageUrl,
+          genre: selectedGenre || null,
+          price: priceType === "free" ? 0 : parseFloat(price) || 0,
+          pages: origin === "import" ? parsedChapters.length : 0,
+          is_public: false,
+        })
+        .select()
+        .single();
       if (error) throw error;
 
       // If imported from file, save chapters
       if (origin === "import" && parsedChapters.length > 0) {
-        const chaptersToInsert = parsedChapters.map(chapter => ({
+        const chaptersToInsert = parsedChapters.map((chapter) => ({
           ebook_id: ebook.id,
           title: chapter.title,
           content: chapter.content,
-          chapter_order: chapter.order
+          chapter_order: chapter.order,
         }));
-        const {
-          error: chaptersError
-        } = await supabase.from("chapters").insert(chaptersToInsert);
+        const { error: chaptersError } = await supabase.from("chapters").insert(chaptersToInsert);
         if (chaptersError) throw chaptersError;
       }
 
-      // Register the owner as the primary author entry.
-      for (const author of authors) {
-        if (author.userId === session.user.id) {
-          const { error: bookAuthorError } = await supabase
-            .from("book_authors")
-            .insert({
-              ebook_id: ebook.id,
-              user_id: author.userId,
-              status: "accepted",
-              is_primary: true
-            })
-            .select()
-            .single();
+      // Register the owner as primary author.
+      await supabase.from("book_authors").insert({
+        ebook_id: ebook.id,
+        user_id: session.user.id,
+        status: "accepted",
+        is_primary: true,
+      });
 
-          // Only create notification for other users, not for self
-          if (!bookAuthorError && bookAuthor && !isCurrentUser) {
-            await supabase.from("notifications").insert({
-              user_id: author.userId,
-              type: 'collaboration_request',
-              title: 'Convite de Colaboração',
-              message: `Você foi adicionado como autor do livro "${title}". Aceite ou rejeite o convite.`,
-              data: { 
-                ebook_id: ebook.id, 
-                book_author_id: bookAuthor.id,
-                ebook_title: title 
-              }
-            });
-          }
+      // For each additional author with a platform account, send invite via RPC.
+      // The RPC invite_book_collaborator creates the book_authors row + notification automatically.
+      for (const author of authors) {
+        if (!author.userId || author.userId === session.user.id) continue;
+
+        const { error: inviteError } = await supabase.rpc("invite_book_collaborator", {
+          p_ebook_id: ebook.id,
+          p_invited_user_id: author.userId,
+        });
+
+        if (inviteError) {
+          console.error(`Erro ao convidar ${author.name}:`, inviteError.message);
         }
       }
 
@@ -249,110 +220,96 @@ const CreateEbook = () => {
         title: "Ebook criado!",
         description: hasCollaboratorInvites
           ? "Convites de colaboração enviados. Redirecionando para o editor..."
-          : "Redirecionando para o editor..."
+          : "Redirecionando para o editor...",
       });
 
-      // Redirect to editor
       navigate(`/editor?id=${ebook.id}`);
     } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
+
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
     setIsUploading(true);
     try {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
       // Upload file to storage
       const filePath = `${user.id}/${Date.now()}-${file.name}`;
-      const {
-        error: uploadError
-      } = await supabase.storage.from('ebook-uploads').upload(filePath, file);
+      const { error: uploadError } = await supabase.storage
+        .from("ebook-uploads")
+        .upload(filePath, file);
       if (uploadError) throw uploadError;
 
       // Parse the file using edge function
       setIsParsing(true);
       const formData = new FormData();
-      formData.append('file', file);
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('parse-ebook', {
-        body: formData
-      });
+      formData.append("file", file);
+      const { data, error } = await supabase.functions.invoke("parse-ebook", { body: formData });
       if (error) throw error;
       setParsedChapters(data.chapters || []);
-      setStep('mapping');
-      toast({
-        title: "Sucesso!",
-        description: "Arquivo processado com sucesso"
-      });
+      setStep("mapping");
+      toast({ title: "Sucesso!", description: "Arquivo processado com sucesso" });
     } catch (error: any) {
-      console.error('Error uploading file:', error);
+      console.error("Error uploading file:", error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao processar arquivo",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
       setIsParsing(false);
     }
   };
-  const handleChapterUpdate = (chapterId: string, field: 'title' | 'content', value: string) => {
-    // Apply basic length validation on the fly
-    if (field === 'title' && value.length > 200) {
+
+  const handleChapterUpdate = (chapterId: string, field: "title" | "content", value: string) => {
+    if (field === "title" && value.length > 200) {
       toast({
         title: "Título muito longo",
         description: "O título do capítulo deve ter no máximo 200 caracteres",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    if (field === 'content' && value.length > 100000) {
+    if (field === "content" && value.length > 100000) {
       toast({
         title: "Conteúdo muito longo",
         description: "O conteúdo do capítulo deve ter no máximo 100.000 caracteres",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    setParsedChapters(chapters => chapters.map(ch => ch.id === chapterId ? {
-      ...ch,
-      [field]: value
-    } : ch));
+    setParsedChapters((chapters) =>
+      chapters.map((ch) => (ch.id === chapterId ? { ...ch, [field]: value } : ch))
+    );
   };
+
   const handleRemoveChapter = (chapterId: string) => {
-    setParsedChapters(chapters => chapters.filter(ch => ch.id !== chapterId));
+    setParsedChapters((chapters) => chapters.filter((ch) => ch.id !== chapterId));
   };
+
   const handleRemoveCoverImage = () => {
     setCoverImage(null);
     setCoverPreviewUrl(null);
   };
+
   const handleNext = () => {
     if (step === "origin" && origin) {
-      if (origin === "import") {
-        setStep("upload");
-      } else {
-        setStep("metadata");
-      }
+      setStep(origin === "import" ? "upload" : "metadata");
     } else if (step === "mapping" && parsedChapters.length > 0) {
       setStep("metadata");
     } else if (step === "metadata") {
       if (!title || authors.length === 0 || !description || !selectedGenre || priceType === "unselected") {
-        toast({ title: "Campos obrigatórios", description: "Por favor preencha todos os campos obrigatórios (*) antes de continuar.", variant: "destructive" });
+        toast({
+          title: "Campos obrigatórios",
+          description: "Por favor preencha todos os campos obrigatórios (*) antes de continuar.",
+          variant: "destructive",
+        });
         return;
       }
       if (priceType === "paid" && (!price || parseFloat(price) <= 0)) {
@@ -361,45 +318,47 @@ const CreateEbook = () => {
       }
       setStep("template");
     } else if (step === "template") {
-      handleCreateEbook();
+      void handleCreateEbook();
     }
   };
+
   const handleBack = () => {
-    if (step === "upload") {
-      setStep("origin");
-    } else if (step === "mapping") {
-      setStep("upload");
-    } else if (step === "metadata") {
-      if (origin === "import") {
-        setStep("mapping");
-      } else {
-        setStep("origin");
-      }
-    } else if (step === "template") {
-      setStep("metadata");
-    }
+    if (step === "upload") setStep("origin");
+    else if (step === "mapping") setStep("upload");
+    else if (step === "metadata") setStep(origin === "import" ? "mapping" : "origin");
+    else if (step === "template") setStep("metadata");
   };
-  const originOptions = [{
-    id: "blank" as const,
-    name: "Criar do Zero",
-    description: "Comece com um eBook em branco e crie seu conteúdo",
-    icon: BookOpen,
-    gradient: "from-[#70CBD4] to-[#69A1EB]",
-    recommended: true
-  }, {
-    id: "import" as const,
-    name: "Importar EPUB/PDF",
-    description: "Faça upload de um arquivo existente para converter",
-    icon: Upload,
-    gradient: "from-[#70CBD4] to-[#69A1EB]",
-    recommended: false
-  }];
-  return <div className="min-h-screen bg-background">
+
+  const originOptions = [
+    {
+      id: "blank" as const,
+      name: "Criar do Zero",
+      description: "Comece com um eBook em branco e crie seu conteúdo",
+      icon: BookOpen,
+      gradient: "from-[#70CBD4] to-[#69A1EB]",
+      recommended: true,
+    },
+    {
+      id: "import" as const,
+      name: "Importar EPUB/PDF",
+      description: "Faça upload de um arquivo existente para converter",
+      icon: Upload,
+      gradient: "from-[#70CBD4] to-[#69A1EB]",
+      recommended: false,
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => step === "origin" ? navigate("/dashboard") : handleBack()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => (step === "origin" ? navigate("/dashboard") : handleBack())}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <img src={logo} alt="Kutara Mabuku" className="w-10 h-10 object-cover" />
@@ -407,7 +366,6 @@ const CreateEbook = () => {
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Criar Novo Ebook
               </h1>
-              
             </div>
           </div>
         </div>
@@ -415,97 +373,122 @@ const CreateEbook = () => {
 
       <main className="container mx-auto px-4 py-8">
         {/* Step: Upload File */}
-        {step === "upload" && <div className="max-w-2xl mx-auto">
+        {step === "upload" && (
+          <div className="max-w-2xl mx-auto">
             <Card className="p-8 space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold">Upload do Arquivo</h2>
-                <p className="text-muted-foreground">
-                  Faça upload do seu EPUB ou PDF
-                </p>
+                <p className="text-muted-foreground">Faça upload do seu EPUB ou PDF</p>
               </div>
 
               <div className="space-y-4">
                 <div className="border-2 border-dashed rounded-lg p-12 text-center hover:border-primary/50 transition-colors">
-                  <input type="file" accept=".epub,.pdf" onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }} className="hidden" id="file-upload-main" disabled={isUploading || isParsing} />
+                  <input
+                    type="file"
+                    accept=".epub,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleFileUpload(file);
+                    }}
+                    className="hidden"
+                    id="file-upload-main"
+                    disabled={isUploading || isParsing}
+                  />
                   <label htmlFor="file-upload-main" className="cursor-pointer flex flex-col items-center gap-4">
                     <Upload className="w-12 h-12 text-muted-foreground" />
                     <div>
                       <p className="text-lg font-medium">
-                        {isUploading ? 'Fazendo upload...' : isParsing ? 'Processando arquivo...' : 'Clique para fazer upload'}
+                        {isUploading
+                          ? "Fazendo upload..."
+                          : isParsing
+                          ? "Processando arquivo..."
+                          : "Clique para fazer upload"}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Formatos aceitos: EPUB, PDF
-                      </p>
+                      <p className="text-sm text-muted-foreground">Formatos aceitos: EPUB, PDF</p>
                     </div>
                   </label>
                 </div>
-                {uploadedFile && <p className="text-sm text-center text-muted-foreground">
+                {uploadedFile && (
+                  <p className="text-sm text-center text-muted-foreground">
                     Arquivo selecionado: {uploadedFile.name}
-                  </p>}
+                  </p>
+                )}
               </div>
 
               <Button variant="outline" onClick={handleBack} className="w-full">
                 Voltar
               </Button>
             </Card>
-          </div>}
+          </div>
+        )}
 
         {/* Step: Chapter Mapping */}
-        {step === "mapping" && <div className="max-w-4xl mx-auto">
+        {step === "mapping" && (
+          <div className="max-w-4xl mx-auto">
             <Card className="p-8 space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold">Mapeamento de Capítulos</h2>
-                <p className="text-muted-foreground">
-                  Revise e edite os capítulos detectados
-                </p>
+                <p className="text-muted-foreground">Revise e edite os capítulos detectados</p>
               </div>
 
               <div className="flex items-center justify-between mb-4 p-4 bg-muted rounded-lg">
                 <p className="text-sm font-medium">
-                  {parsedChapters.length} capítulo{parsedChapters.length !== 1 ? 's' : ''} detectado{parsedChapters.length !== 1 ? 's' : ''}
+                  {parsedChapters.length} capítulo{parsedChapters.length !== 1 ? "s" : ""} detectado
+                  {parsedChapters.length !== 1 ? "s" : ""}
                 </p>
               </div>
-              
+
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                {parsedChapters.map((chapter, index) => <Card key={chapter.id} className="p-4">
+                {parsedChapters.map((chapter, index) => (
+                  <Card key={chapter.id} className="p-4">
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 space-y-2">
-                          <Label htmlFor={`chapter-title-${chapter.id}`}>
-                            Capítulo {index + 1}
-                          </Label>
-                          <Input id={`chapter-title-${chapter.id}`} value={chapter.title} onChange={e => handleChapterUpdate(chapter.id, 'title', e.target.value)} placeholder="Título do capítulo" />
+                          <Label htmlFor={`chapter-title-${chapter.id}`}>Capítulo {index + 1}</Label>
+                          <Input
+                            id={`chapter-title-${chapter.id}`}
+                            value={chapter.title}
+                            onChange={(e) => handleChapterUpdate(chapter.id, "title", e.target.value)}
+                            placeholder="Título do capítulo"
+                          />
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => handleRemoveChapter(chapter.id)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <div>
-                        <Label htmlFor={`chapter-content-${chapter.id}`}>
-                          Conteúdo (preview)
-                        </Label>
-                        <Textarea id={`chapter-content-${chapter.id}`} value={chapter.content.substring(0, 200) + (chapter.content.length > 200 ? '...' : '')} readOnly className="h-20 resize-none bg-muted" />
+                        <Label htmlFor={`chapter-content-${chapter.id}`}>Conteúdo (preview)</Label>
+                        <Textarea
+                          id={`chapter-content-${chapter.id}`}
+                          value={chapter.content.substring(0, 200) + (chapter.content.length > 200 ? "..." : "")}
+                          readOnly
+                          className="h-20 resize-none bg-muted"
+                        />
                       </div>
                     </div>
-                  </Card>)}
+                  </Card>
+                ))}
               </div>
 
               <div className="flex gap-4">
                 <Button variant="outline" onClick={handleBack} className="flex-1">
                   Voltar
                 </Button>
-                <Button onClick={handleNext} disabled={parsedChapters.length === 0} className="flex-1 bg-gradient-primary hover:opacity-90">
+                <Button
+                  onClick={handleNext}
+                  disabled={parsedChapters.length === 0}
+                  className="flex-1 bg-gradient-primary hover:opacity-90"
+                >
                   Continuar <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </Card>
-          </div>}
+          </div>
+        )}
 
         {/* Step: Select Origin */}
-        {step === "origin" && <div className="max-w-4xl mx-auto space-y-6">
+        {step === "origin" && (
+          <div className="max-w-4xl mx-auto space-y-6">
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-bold">Como deseja criar seu eBook?</h2>
               <p className="text-muted-foreground">
@@ -514,18 +497,30 @@ const CreateEbook = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {originOptions.map(option => <Card key={option.id} className={`p-6 cursor-pointer hover:shadow-glow transition-all border-2 ${origin === option.id ? "border-primary" : "hover:border-primary"}`} onClick={() => setOrigin(option.id)}>
+              {originOptions.map((option) => (
+                <Card
+                  key={option.id}
+                  className={`p-6 cursor-pointer hover:shadow-glow transition-all border-2 ${
+                    origin === option.id ? "border-primary" : "hover:border-primary"
+                  }`}
+                  onClick={() => setOrigin(option.id)}
+                >
                   <div className="flex justify-between items-start mb-4">
-                    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center`}>
+                    <div
+                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center`}
+                    >
                       <option.icon className="h-8 w-8 text-white" />
                     </div>
-                    {option.recommended && <span className="px-2 py-1 text-xs bg-primary text-primary-foreground rounded-full">
+                    {option.recommended && (
+                      <span className="px-2 py-1 text-xs bg-primary text-primary-foreground rounded-full">
                         Recomendado
-                      </span>}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{option.name}</h3>
                   <p className="text-sm text-muted-foreground">{option.description}</p>
-                </Card>)}
+                </Card>
+              ))}
             </div>
 
             <div className="flex justify-center">
@@ -533,16 +528,16 @@ const CreateEbook = () => {
                 Continuar
               </Button>
             </div>
-          </div>}
+          </div>
+        )}
 
         {/* Step: Metadata */}
-        {step === "metadata" && <div className="max-w-2xl mx-auto">
+        {step === "metadata" && (
+          <div className="max-w-2xl mx-auto">
             <Card className="p-8 space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold">Informações do eBook</h2>
-                <p className="text-muted-foreground">
-                  Preencha os dados básicos do seu eBook
-                </p>
+                <p className="text-muted-foreground">Preencha os dados básicos do seu eBook</p>
               </div>
 
               <div className="space-y-4">
@@ -550,48 +545,72 @@ const CreateEbook = () => {
                   <Label htmlFor="title">
                     Título <span className="text-destructive">*</span>
                   </Label>
-                  <Input id="title" placeholder="Digite o título do seu eBook" value={title} onChange={e => setTitle(e.target.value)} required />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="author">Autores <span className="text-destructive">*</span></Label>
-                  <AuthorInput
-                    initialAuthors={authors}
-                    onChange={(newAuthors) => setAuthors(newAuthors)}
+                  <Input
+                    id="title"
+                    placeholder="Digite o título do seu eBook"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição <span className="text-destructive">*</span></Label>
-                  <Textarea id="description" placeholder="Descreva seu eBook..." value={description} onChange={e => setDescription(e.target.value)} rows={4} />
+                  <Label htmlFor="author">
+                    Autores <span className="text-destructive">*</span>
+                  </Label>
+                  <AuthorInput initialAuthors={authors} onChange={(newAuthors) => setAuthors(newAuthors)} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">
+                    Descrição <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Descreva seu eBook..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="genre">Gênero <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="genre">
+                      Gênero <span className="text-destructive">*</span>
+                    </Label>
                     <Select value={selectedGenre} onValueChange={setSelectedGenre}>
                       <SelectTrigger id="genre">
                         <SelectValue placeholder="Selecione um gênero" />
                       </SelectTrigger>
                       <SelectContent>
-                        {genres.map(genre => <SelectItem key={genre.id} value={genre.name}>
+                        {genres.map((genre) => (
+                          <SelectItem key={genre.id} value={genre.name}>
                             {genre.name}
-                          </SelectItem>)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="price-type">Tipo de Preço <span className="text-destructive">*</span></Label>
-                    <Select value={priceType} onValueChange={(value: "unselected" | "free" | "paid") => {
-                      setPriceType(value);
-                      if (value === "free") setPrice("0");
-                    }}>
+                    <Label htmlFor="price-type">
+                      Tipo de Preço <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={priceType}
+                      onValueChange={(value: "unselected" | "free" | "paid") => {
+                        setPriceType(value);
+                        if (value === "free") setPrice("0");
+                      }}
+                    >
                       <SelectTrigger id="price-type">
                         <SelectValue placeholder="Não Selecionado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unselected" disabled>Não Selecionado</SelectItem>
+                        <SelectItem value="unselected" disabled>
+                          Não Selecionado
+                        </SelectItem>
                         <SelectItem value="free">Grátis</SelectItem>
                         <SelectItem value="paid">Pago</SelectItem>
                       </SelectContent>
@@ -599,20 +618,30 @@ const CreateEbook = () => {
                   </div>
                 </div>
 
-                {priceType === "paid" && <div className="space-y-2">
-                    <Label htmlFor="price">Preço (MZN) <span className="text-destructive">*</span></Label>
-                    <Input id="price" type="number" min="0" step="0.01" placeholder="0.00" value={price} onChange={e => setPrice(e.target.value)} />
-                  </div>}
+                {priceType === "paid" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="price">
+                      Preço (MZN) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="cover" className="block">Capa do Ebook</Label>
+                  <Label htmlFor="cover" className="block">
+                    Capa do Ebook
+                  </Label>
                   {coverPreviewUrl ? (
                     <div className="relative w-full max-w-xs">
-                      <img
-                        src={coverPreviewUrl}
-                        alt="Capa"
-                        className="w-full h-auto rounded-lg border"
-                      />
+                      <img src={coverPreviewUrl} alt="Capa" className="w-full h-auto rounded-lg border" />
                       <Button
                         variant="destructive"
                         size="icon"
@@ -629,7 +658,7 @@ const CreateEbook = () => {
                         id="cover"
                         type="file"
                         accept="image/*"
-                        onChange={e => setCoverImage(e.target.files?.[0] || null)}
+                        onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
                         className="hidden"
                       />
                       <label htmlFor="cover" className="cursor-pointer flex flex-col items-center gap-2">
@@ -650,17 +679,20 @@ const CreateEbook = () => {
                 </Button>
               </div>
             </Card>
-          </div>}
+          </div>
+        )}
 
         {/* Step: Select Template */}
-        {step === "template" && <div className="max-w-6xl mx-auto space-y-6">
+        {step === "template" && (
+          <div className="max-w-6xl mx-auto space-y-6">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-2">
                 <Sparkles className="h-6 w-6 text-primary" />
                 <h2 className="text-3xl font-bold">Escolher Template de Capa</h2>
               </div>
               <p className="text-muted-foreground">
-                Se você fez upload de uma capa personalizada, selecione "Nenhum" para usar sua imagem sem sobreposição de template.
+                Se você fez upload de uma capa personalizada, selecione "Nenhum" para usar sua imagem sem sobreposição
+                de template.
               </p>
             </div>
 
@@ -673,14 +705,20 @@ const CreateEbook = () => {
                       type="button"
                       onClick={() => setSelectedTemplate(template.id)}
                       className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                        selectedTemplate === template.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                        selectedTemplate === template.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
                       }`}
                       title={template.description}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-14 h-20 rounded-md overflow-hidden border bg-muted flex-shrink-0 relative">
                           {template.id === "none" && coverImage ? (
-                            <img src={coverPreviewUrl} alt="Capa selecionada" className="w-full h-full object-cover" />
+                            <img
+                              src={coverPreviewUrl ?? undefined}
+                              alt="Capa selecionada"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div
                               className="absolute inset-0 origin-top-left scale-[0.08]"
@@ -707,11 +745,20 @@ const CreateEbook = () => {
 
                 <div className="flex flex-col items-center justify-center">
                   <h4 className="text-sm font-medium text-foreground mb-3">Prévia</h4>
-                  <div className="border rounded-lg overflow-hidden shadow-md" style={{ width: "300px", height: "388px" }}>
+                  <div
+                    className="border rounded-lg overflow-hidden shadow-md"
+                    style={{ width: "300px", height: "388px" }}
+                  >
                     {selectedTemplate === "none" && coverImage ? (
-                      <img src={coverPreviewUrl} alt={title || "Capa"} className="w-full h-full object-cover" />
+                      <img
+                        src={coverPreviewUrl ?? undefined}
+                        alt={title || "Capa"}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <div style={{ transform: "scale(0.35)", transformOrigin: "top left", width: "8.5in", height: "11in" }}>
+                      <div
+                        style={{ transform: "scale(0.35)", transformOrigin: "top left", width: "8.5in", height: "11in" }}
+                      >
                         <CoverPreview
                           template={selectedTemplate}
                           title={title || "Titulo"}
@@ -735,15 +782,19 @@ const CreateEbook = () => {
               <Button variant="outline" onClick={handleBack}>
                 Voltar
               </Button>
-              <Button onClick={handleNext} disabled={loading || (!coverImage && selectedTemplate === "none")} className="bg-gradient-primary hover:opacity-90">
+              <Button
+                onClick={handleNext}
+                disabled={loading || (!coverImage && selectedTemplate === "none")}
+                className="bg-gradient-primary hover:opacity-90"
+              >
                 {loading ? "Criando..." : "Continuar"}
               </Button>
             </div>
-          </div>}
+          </div>
+        )}
       </main>
-    </div>;
+    </div>
+  );
 };
+
 export default CreateEbook;
-
-
-

@@ -55,44 +55,6 @@ const Notifications = () => {
   const { toast } = useToast();
   const { refreshUnreadCount } = useNotificationContext();
 
-  useEffect(() => {
-    void checkAuthAndLoad();
-  }, []);
-
-  const checkAuthAndLoad = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-    setCurrentUserId(session.user.id);
-    await loadNotifications();
-  };
-
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    const channel = supabase
-      .channel(`notifications-page-${currentUserId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${currentUserId}`,
-        },
-        () => {
-          void loadNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [currentUserId, loadNotifications]);
-
   const loadNotifications = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -119,6 +81,43 @@ const Notifications = () => {
       setLoading(false);
     }
   }, [refreshUnreadCount, toast]);
+
+  useEffect(() => {
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+      setCurrentUserId(session.user.id);
+      await loadNotifications();
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel(`notifications-page-${currentUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        () => {
+          void loadNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [currentUserId, loadNotifications]);
 
   const handleCollaborationResponse = async (notification: Notification, accept: boolean) => {
     setProcessingId(notification.id);
@@ -698,7 +697,7 @@ const Notifications = () => {
                     )}
 
                     {/* General actions for other notifications */}
-                    {notification.type !== 'collaboration_request' && notification.type !== 'follow_request' && notification.type !== 'follow_accepted' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
+                    {notification.type !== 'collaboration_request' && notification.type !== 'collaboration_accepted' && notification.type !== 'collaboration_rejected' && notification.type !== 'follow_request' && notification.type !== 'follow_accepted' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
                       <Button
                         size="sm"
                         variant="ghost"
