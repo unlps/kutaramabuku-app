@@ -213,6 +213,11 @@ const CreateEbook = () => {
 
         if (inviteError) {
           console.error(`Erro ao convidar ${author.name}:`, inviteError.message);
+          toast({
+            title: `Erro ao convidar ${author.name}`,
+            description: inviteError.message,
+            variant: "destructive",
+          });
         }
       }
 
