@@ -71,13 +71,33 @@ const MyBooks = () => {
 
     if (!session) return;
 
-    const { data: ebooksData } = await supabase
+    const { data: ownedData } = await supabase
       .from("ebooks")
       .select("*")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", session.user.id);
 
-    if (!ebooksData) return;
+    const { data: collabData } = await supabase
+      .from("book_authors")
+      .select("ebook_id, ebooks(*)")
+      .eq("user_id", session.user.id)
+      .eq("status", "accepted");
+
+    const allBooksMap = new Map<string, Ebook>();
+    
+    if (ownedData) {
+      ownedData.forEach((b) => allBooksMap.set(b.id, b as Ebook));
+    }
+    
+    if (collabData) {
+      collabData.forEach((item: any) => {
+        if (item.ebooks && !allBooksMap.has(item.ebook_id)) {
+          allBooksMap.set(item.ebook_id, item.ebooks as Ebook);
+        }
+      });
+    }
+
+    const ebooksData = Array.from(allBooksMap.values())
+      .sort((a, b) => new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime());
 
     setEbooks(ebooksData);
 

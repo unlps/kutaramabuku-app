@@ -115,22 +115,45 @@ const Dashboard = () => {
 
     if (!session) return;
 
-    const { data: ebooksData } = await supabase
+    const { data: ownedData } = await supabase
       .from("ebooks")
       .select("*")
+      .eq("user_id", session.user.id);
+
+    const { data: collabData } = await supabase
+      .from("book_authors")
+      .select("ebook_id, ebooks(*)")
       .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false })
-      .limit(6);
+      .eq("status", "accepted");
+
+    const allBooksMap = new Map<string, Ebook>();
+    
+    if (ownedData) {
+      ownedData.forEach((b) => allBooksMap.set(b.id, b as Ebook));
+    }
+    
+    if (collabData) {
+      collabData.forEach((item: any) => {
+        if (item.ebooks && !allBooksMap.has(item.ebook_id)) {
+          allBooksMap.set(item.ebook_id, item.ebooks as Ebook);
+        }
+      });
+    }
+
+    const ebooksData = Array.from(allBooksMap.values())
+      .sort((a, b) => new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime());
+
+    const topEbooks = ebooksData.slice(0, 6);
 
     if (ebooksData) {
-      setEbooks(ebooksData);
+      setEbooks(topEbooks);
       setStats({
-        totalViews: ebooksData.reduce((sum, book) => sum + (book.views || 0), 0),
-        totalDownloads: ebooksData.reduce((sum, book) => sum + (book.downloads || 0), 0),
+        totalViews: topEbooks.reduce((sum, book) => sum + (book.views || 0), 0),
+        totalDownloads: topEbooks.reduce((sum, book) => sum + (book.downloads || 0), 0),
         totalEbooks: ebooksData.length,
       });
 
-      const latestSubmissions = await loadLatestSubmissions(ebooksData.map((book) => book.id));
+      const latestSubmissions = await loadLatestSubmissions(topEbooks.map((book) => book.id));
       setSubmissionMap(Object.fromEntries(latestSubmissions.entries()));
     }
 
