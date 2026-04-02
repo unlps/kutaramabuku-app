@@ -59,6 +59,7 @@ const Account = () => {
   const [publicBooks, setPublicBooks] = useState<any[]>([]);
   const [privateBooks, setPrivateBooks] = useState<any[]>([]);
   const [reviewBooks, setReviewBooks] = useState<any[]>([]);
+  const [collabBooks, setCollabBooks] = useState<any[]>([]);
   const [libraryBooks, setLibraryBooks] = useState<any[]>([]);
   const [submissionMap, setSubmissionMap] = useState<Record<string, LatestSubmission>>({});
   const [wishlist, setWishlist] = useState<any[]>([]);
@@ -179,6 +180,21 @@ const Account = () => {
             state.stage === "scheduled"
           );
         })
+      );
+    }
+
+    // Fetch collaborations
+    const { data: collabDataRaw } = await supabase
+      .from("book_authors")
+      .select("ebook_id, ebooks(*)")
+      .eq("user_id", profileId)
+      .eq("status", "accepted");
+      
+    if (collabDataRaw) {
+      setCollabBooks(
+        collabDataRaw
+          .filter(item => item.ebooks)
+          .map(item => item.ebooks)
       );
     }
 
@@ -547,7 +563,7 @@ const Account = () => {
     return nextBooks;
   }, [libraryBooks, libraryFilter, librarySort]);
 
-  const hasOwnBooks = publicBooks.length + reviewBooks.length + privateBooks.length > 0;
+  const hasOwnBooks = publicBooks.length + reviewBooks.length + privateBooks.length + collabBooks.length > 0;
   const shouldShowOwnTabs = isOwnProfile;
   const canViewPublicContent = isOwnProfile || !profile?.is_private || isFollowing;
 
@@ -827,6 +843,13 @@ const Account = () => {
               privateBooks,
               "owned",
               "Ainda não tens livros privados.",
+              <BookOpen className="h-5 w-5" />
+            )}
+            {renderBookSection(
+              "Colaborações",
+              collabBooks,
+              "owned",
+              "Ainda não participas em nenhuma colaboração.",
               <BookOpen className="h-5 w-5" />
             )}
 
