@@ -792,9 +792,24 @@ export type Database = {
         }
         Returns: string
       }
+      invite_book_collaborator: {
+        Args: {
+          p_ebook_id: string
+          p_invited_user_id: string
+        }
+        Returns: string
+      }
       submit_book_for_review: {
         Args: {
           p_ebook_id: string
+        }
+        Returns: string
+      }
+      respond_to_collaboration_invite: {
+        Args: {
+          p_accept: boolean
+          p_book_author_id: string
+          p_notification_id?: string | null
         }
         Returns: string
       }
