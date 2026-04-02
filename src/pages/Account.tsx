@@ -390,6 +390,15 @@ const Account = () => {
   };
   const handleDownloadEbook = async () => {
     if (!selectedBook) return;
+    const isBookOwnedByCurrentUser = Boolean(currentUserId && selectedBook.user_id === currentUserId);
+    if (!isBookOwnedByCurrentUser) {
+      toast({
+        title: "Download indisponível",
+        description: "Livros de outros autores ficam disponíveis apenas na biblioteca da plataforma.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       const htmlToText = (html: string) => {
         const temp = document.createElement("div");
@@ -1074,8 +1083,6 @@ const Account = () => {
   </div>;
 };
 export default Account;
-
-
 
 
 

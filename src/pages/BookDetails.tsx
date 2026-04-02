@@ -236,6 +236,7 @@ export default function BookDetails() {
         return sorted;
     }
   };
+  const canDownloadToComputer = !!currentUser && currentUser === book?.user_id;
 
   const handleDownloadFreeBook = async () => {
     if (!book || book.price !== 0) {
@@ -250,7 +251,7 @@ export default function BookDetails() {
         return;
       }
 
-      if (currentUser && currentUser !== book.user_id) {
+      if (!canDownloadToComputer) {
         await ensureBookInLibrary(book.id, 0);
         await supabase
           .from("ebooks")
@@ -517,7 +518,11 @@ export default function BookDetails() {
                 disabled={book.price !== 0}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {book.price === 0 ? "Baixar Grátis" : `Comprar - ${book.price?.toFixed(2)} MZN`}
+                {book.price === 0
+                  ? canDownloadToComputer
+                    ? "Baixar para o computador"
+                    : "Adicionar à biblioteca"
+                  : `Comprar - ${book.price?.toFixed(2)} MZN`}
               </Button>
               <Button variant="outline" size="lg" onClick={toggleWishlist} className="flex-1 py-[8px]">
                 <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-current" : ""}`} />
