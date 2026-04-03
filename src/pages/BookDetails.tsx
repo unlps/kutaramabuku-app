@@ -15,6 +15,7 @@ import { BookCard } from "@/components/BookCard";
 import BottomNav from "@/components/BottomNav";
 import CoverPreview from "@/components/CoverPreview";
 import { CoverTemplate } from "@/components/templates/covers";
+import { DownloadAnimation } from "@/components/DownloadAnimation";
 import { stripHtml, sanitizeHtml } from "@/lib/utils";
 import { ensureBookInLibrary } from "@/services/libraryService";
 interface Ebook {
@@ -65,6 +66,7 @@ export default function BookDetails() {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [sortBy, setSortBy] = useState<"recent" | "oldest" | "highest">("recent");
   const [authorProfile, setAuthorProfile] = useState<{ full_name?: string; avatar_url?: string; bio?: string } | null>(null);
+  const [isDownloadingAnim, setIsDownloadingAnim] = useState(false);
   useEffect(() => {
     fetchBookDetails();
     checkWishlistStatus();
@@ -368,6 +370,7 @@ export default function BookDetails() {
         .update({ downloads: (book.downloads || 0) + 1 })
         .eq("id", book.id);
 
+      setIsDownloadingAnim(true);
       toast.success("Download concluído!");
     } catch (error) {
       console.error("Error downloading ebook:", error);
@@ -419,6 +422,7 @@ export default function BookDetails() {
       </div>;
   }
   return <div className="min-h-screen bg-background pb-24">
+      <DownloadAnimation isDownloading={isDownloadingAnim} onComplete={() => setIsDownloadingAnim(false)} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
