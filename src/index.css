@@ -550,13 +550,13 @@ All colors MUST be HSL.
     display: none;
   }
 }
-@ k e y f r a m e s   s l i d e - d o w n - f a d e   { 
-     0 %   {   t r a n s f o r m :   t r a n s l a t e Y ( - 5 0 p x )   s c a l e ( 0 . 9 ) ;   o p a c i t y :   0 ;   } 
-     2 0 %   {   t r a n s f o r m :   t r a n s l a t e Y ( 0 )   s c a l e ( 1 ) ;   o p a c i t y :   1 ;   } 
-     8 0 %   {   t r a n s f o r m :   t r a n s l a t e Y ( 0 )   s c a l e ( 1 ) ;   o p a c i t y :   1 ;   } 
-     1 0 0 %   {   t r a n s f o r m :   t r a n s l a t e Y ( 5 0 p x )   s c a l e ( 0 . 9 ) ;   o p a c i t y :   0 ;   } 
- } 
- . a n i m a t e - s l i d e - d o w n - f a d e   { 
-     a n i m a t i o n :   s l i d e - d o w n - f a d e   2 s   c u b i c - b e z i e r ( 0 . 1 6 ,   1 ,   0 . 3 ,   1 )   f o r w a r d s ; 
- }  
- 
+
+@keyframes slide-down-fade {
+  0% { transform: translateY(-50px) scale(0.9); opacity: 0; }
+  20% { transform: translateY(0) scale(1); opacity: 1; }
+  80% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(50px) scale(0.9); opacity: 0; }
+}
+.animate-slide-down-fade {
+  animation: slide-down-fade 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
