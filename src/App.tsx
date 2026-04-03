@@ -1,4 +1,5 @@
 import { NotificationProvider } from "@/context/NotificationContext";
+import { DownloadProvider } from "@/context/DownloadContext";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -44,7 +45,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <NotificationProvider>
-        <TooltipProvider>
+        <DownloadProvider>
+          <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -153,7 +155,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </DownloadProvider>
       </NotificationProvider>
     </ThemeProvider>
   </QueryClientProvider>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, UserCheck, UserX, Rocket, CalendarClock, Eye } from "lucide-react";
+import { Bell, Check, X, BookOpen, Users, Loader2, UserPlus, UserCheck, UserX, Rocket, CalendarClock, Eye, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logo from "@/assets/logo-new.png";
@@ -11,7 +11,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useNotificationContext } from "@/context/NotificationContext";
+import { useDownloadContext } from "@/context/DownloadContext";
 import { cn } from "@/lib/utils";
 import { SchedulePublishDialog } from "@/components/SchedulePublishDialog";
 
@@ -56,6 +58,7 @@ const Notifications = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { refreshUnreadCount } = useNotificationContext();
+  const { downloads } = useDownloadContext();
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -418,6 +421,52 @@ const Notifications = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 pb-24">
+        
+        {/* Active Downloads Section */}
+        {Object.keys(downloads).length > 0 && (
+          <div className="max-w-3xl mx-auto mb-8 space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Download className="w-5 h-5" />
+              Downloads Ativos
+            </h2>
+            {Object.values(downloads).map((download) => (
+              <Card key={download.ebookId} className="p-4 flex flex-col sm:flex-row items-center gap-4 border-primary/20">
+                {download.coverImage ? (
+                  <img src={download.coverImage} alt={download.title} className="w-12 h-16 object-cover rounded shadow-sm" />
+                ) : (
+                  <div className="w-12 h-16 bg-muted flex items-center justify-center rounded">
+                    <BookOpen className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                )}
+                
+                <div className="flex-1 w-full space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold">{download.title}</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {download.status === "completed" ? "100%" : `${download.progress}%`}
+                    </span>
+                  </div>
+                  <Progress value={download.progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {download.status === "downloading" && "A baixar..."}
+                    {download.status === "completed" && "Livro adicionado à biblioteca"}
+                    {download.status === "error" && "Erro ao baixar livro"}
+                  </p>
+                </div>
+
+                {download.status === "completed" && (
+                  <Button 
+                    onClick={() => navigate(`/book/${download.ebookId}`)}
+                    className="w-full sm:w-auto"
+                  >
+                    Ler livro
+                  </Button>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="max-w-3xl mx-auto mb-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto rounded-xl bg-muted/60 p-1 mb-6 gap-1">
             <TabsTrigger value="all" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Todas</TabsTrigger>

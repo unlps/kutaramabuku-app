@@ -29,6 +29,7 @@ const BottomNav = () => {
 
             return (
               <button
+                id={`nav-${item.id}`}
                 key={item.id}
                 onClick={() => navigate(item.path)}
                 className={cn(

@@ -15,7 +15,18 @@ import { BookCard } from "@/components/BookCard";
 import BottomNav from "@/components/BottomNav";
 import CoverPreview from "@/components/CoverPreview";
 import { CoverTemplate } from "@/components/templates/covers";
+import { useDownloadContext } from "@/context/DownloadContext";
 import { DownloadAnimation } from "@/components/DownloadAnimation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { stripHtml, sanitizeHtml } from "@/lib/utils";
 import { ensureBookInLibrary } from "@/services/libraryService";
 interface Ebook {
@@ -57,7 +68,10 @@ export default function BookDetails() {
   const [similarBooks, setSimilarBooks] = useState<Ebook[]>([]);
   const [authorBooks, setAuthorBooks] = useState<Ebook[]>([]);
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isInLibrary, setIsInLibrary] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { startDownload } = useDownloadContext();
   const [newReview, setNewReview] = useState({
     rating: 5,
     comment: ""
@@ -70,6 +84,7 @@ export default function BookDetails() {
   useEffect(() => {
     fetchBookDetails();
     checkWishlistStatus();
+    checkLibraryStatus();
     fetchCurrentUser();
   }, [id]);
   const fetchCurrentUser = async () => {
@@ -168,6 +183,30 @@ export default function BookDetails() {
     } = await supabase.from("wishlist").select("id").eq("user_id", user.id).eq("ebook_id", id).maybeSingle();
     setIsInWishlist(!!data);
   };
+  const checkLibraryStatus = async () => {
+    const {
+      data: {
+        user
+      }
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const {
+      data
+    } = await supabase.from("purchases").select("id").eq("user_id", user.id).eq("ebook_id", id).maybeSingle();
+    setIsInLibrary(!!data);
+  };
+  const handleRemoveFromLibrary = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    try {
+      await supabase.from("purchases").delete().eq("user_id", user.id).eq("ebook_id", id);
+      setIsInLibrary(false);
+      setShowRemoveDialog(false);
+      toast.success("Livro removido da biblioteca");
+    } catch (error) {
+      toast.error("Erro ao remover o livro");
+    }
+  };
   const toggleWishlist = async () => {
     const {
       data: {
@@ -248,20 +287,26 @@ export default function BookDetails() {
 
     try {
       if (!currentUser) {
-        toast.error("FaÃ§a login para adicionar este livro Ã  tua biblioteca.");
+        toast.error("Faça login para adicionar este livro à tua biblioteca.");
         navigate("/auth");
         return;
       }
 
       if (!canDownloadToComputer) {
-        await ensureBookInLibrary(book.id, 0);
-        await supabase
-          .from("ebooks")
-          .update({ downloads: (book.downloads || 0) + 1 })
-          .eq("id", book.id);
-
-        toast.success("Livro adicionado a tua biblioteca!");
-        navigate("/account");
+        setIsDownloadingAnim(true);
+        startDownload(
+          book.id,
+          book.title,
+          book.cover_image,
+          async () => {
+            await ensureBookInLibrary(book.id, 0);
+            await supabase
+              .from("ebooks")
+              .update({ downloads: (book.downloads || 0) + 1 })
+              .eq("id", book.id);
+            setIsInLibrary(true);
+          }
+        );
         return;
       }
 
@@ -510,19 +555,30 @@ export default function BookDetails() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                size="lg" 
-                className="flex-1 py-[8px]"
-                onClick={book.price === 0 ? handleDownloadFreeBook : undefined}
-                disabled={book.price !== 0}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {book.price === 0
-                  ? canDownloadToComputer
-                    ? "Baixar para o computador"
-                    : "Adicionar à biblioteca"
-                  : `Comprar - ${book.price?.toFixed(2)} MZN`}
-              </Button>
+              {isInLibrary ? (
+                <Button 
+                  size="lg" 
+                  variant="destructive"
+                  className="flex-1 py-[8px]"
+                  onClick={() => setShowRemoveDialog(true)}
+                >
+                  Remover da biblioteca
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  className="flex-1 py-[8px]"
+                  onClick={book.price === 0 ? handleDownloadFreeBook : undefined}
+                  disabled={book.price !== 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {book.price === 0
+                    ? canDownloadToComputer
+                      ? "Baixar para o computador"
+                      : "Adicionar à biblioteca"
+                    : `Comprar - ${book.price?.toFixed(2)} MZN`}
+                </Button>
+              )}
               <Button variant="outline" size="lg" onClick={toggleWishlist} className="flex-1 py-[8px]">
                 <Heart className={`h-4 w-4 mr-2 ${isInWishlist ? "fill-current" : ""}`} />
                 {isInWishlist ? "Na Wishlist" : "Adicionar à Wishlist"}
@@ -702,6 +758,21 @@ export default function BookDetails() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover da biblioteca?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem a certeza que deseja remover este livro da sua biblioteca? Terá de o adicionar novamente se quiser voltar a ler.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveFromLibrary}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>;
