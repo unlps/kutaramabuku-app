@@ -388,6 +388,29 @@ const Account = () => {
     setShowBookDialog(false);
     fetchData();
   };
+  const handleRemoveFromLibrary = async () => {
+    if (!selectedBook || !currentUserId) return;
+    const { error } = await supabase
+      .from("purchases")
+      .delete()
+      .eq("ebook_id", selectedBook.id)
+      .eq("user_id", currentUserId);
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o livro da biblioteca",
+        variant: "destructive"
+      });
+      return;
+    }
+    toast({
+      title: "Livro removido",
+      description: "O livro foi removido da sua biblioteca"
+    });
+    setSelectedBook(null);
+    setShowBookDialog(false);
+    fetchData();
+  };
   const handleDownloadEbook = async () => {
     if (!selectedBook) return;
     const isBookOwnedByCurrentUser = Boolean(currentUserId && selectedBook.user_id === currentUserId);
@@ -1065,6 +1088,12 @@ const Account = () => {
           {isWishlistBook && (
             <Button variant="destructive" onClick={handleRemoveFromWishlist} className="flex-1">
               <HeartOff className="mr-2 h-4 w-4" />
+              Remover da Wishlist
+            </Button>
+          )}
+          {isLibraryBook && (
+            <Button variant="destructive" onClick={handleRemoveFromLibrary} className="flex-1">
+              <Trash2 className="mr-2 h-4 w-4" />
               Remover
             </Button>
           )}
