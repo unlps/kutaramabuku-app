@@ -128,6 +128,42 @@ const Auth = () => {
     setResendCooldown(remainingCooldown);
   };
 
+  const isMissingFullNameStatusFunctionError = (error: any) => {
+    const errorText = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+    return errorText.includes("get_full_name_registration_status");
+  };
+
+  const ensureUniqueFullName = async (normalizedFullName: string) => {
+    const { data: fullNameStatus, error: fullNameCheckError } = await (supabase as any).rpc("get_full_name_registration_status", {
+      p_full_name: normalizedFullName,
+    });
+
+    if (!fullNameCheckError) {
+      if (fullNameStatus === "registered") {
+        throw new Error("Este nome ja esta associado a uma conta.");
+      }
+      if (fullNameStatus === "pending_verification") {
+        throw new Error("Este nome ja esta reservado por um registo pendente.");
+      }
+      return;
+    }
+
+    if (!isMissingFullNameStatusFunctionError(fullNameCheckError)) {
+      throw fullNameCheckError;
+    }
+
+    const { data: existingName, error: fallbackError } = await (supabase as any)
+      .from("profiles_public")
+      .select("id")
+      .ilike("full_name", normalizedFullName)
+      .limit(1);
+
+    if (fallbackError) throw fallbackError;
+    if (Array.isArray(existingName) && existingName.length > 0) {
+      throw new Error("Este nome ja esta associado a uma conta.");
+    }
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -183,17 +219,7 @@ const Auth = () => {
       }
 
       const normalizedFullName = fullName.trim();
-      const { data: fullNameStatus, error: fullNameCheckError } = await (supabase as any).rpc("get_full_name_registration_status", {
-        p_full_name: normalizedFullName,
-      });
-
-      if (fullNameCheckError) throw fullNameCheckError;
-      if (fullNameStatus === "registered") {
-        throw new Error("Este nome ja esta associado a uma conta.");
-      }
-      if (fullNameStatus === "pending_verification") {
-        throw new Error("Este nome ja esta reservado por um registo pendente.");
-      }
+      await ensureUniqueFullName(normalizedFullName);
 
       const { data, error } = await supabase.auth.signUp({
         email,
