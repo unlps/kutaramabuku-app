@@ -62,6 +62,11 @@ const Notifications = () => {
   const { refreshUnreadCount } = useNotificationContext();
   const { downloads } = useDownloadContext();
 
+  const isMissingCancelInviteFunctionError = (error: any) => {
+    const errorText = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+    return errorText.includes("cancel_book_collaboration_invite");
+  };
+
   const loadNotifications = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -171,11 +176,33 @@ const Notifications = () => {
         throw new Error("ID do convite nÃ£o encontrado");
       }
 
-      const { error } = await supabase.rpc("cancel_book_collaboration_invite", {
+      const { error: cancelError } = await supabase.rpc("cancel_book_collaboration_invite", {
         p_book_author_id: bookAuthorId,
       });
 
-      if (error) throw error;
+      if (cancelError) {
+        if (!isMissingCancelInviteFunctionError(cancelError)) {
+          throw cancelError;
+        }
+
+        const { error: fallbackDeleteError } = await supabase
+          .from("book_authors")
+          .delete()
+          .eq("id", bookAuthorId);
+
+        if (fallbackDeleteError) throw fallbackDeleteError;
+
+        await supabase
+          .from("notifications")
+          .update({
+            is_read: true,
+            data: {
+              ...(notification.data || {}),
+              response_status: "cancelled",
+            },
+          })
+          .eq("id", notification.id);
+      }
 
       await loadNotifications();
 

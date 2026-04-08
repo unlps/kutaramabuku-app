@@ -46,6 +46,11 @@ export default function AuthorInput({
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const isMissingCancelInviteFunctionError = (error: any) => {
+    const errorText = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+    return errorText.includes("cancel_book_collaboration_invite");
+  };
+
   useEffect(() => {
     const getCurrentUser = async () => {
       const {
@@ -291,11 +296,22 @@ export default function AuthorInput({
     if (ebookId && authorToRemove?.userId) {
       try {
         if (authorToRemove.status === "pending") {
-          const { error } = await supabase.rpc("cancel_book_collaboration_invite", {
+          const { error: cancelError } = await supabase.rpc("cancel_book_collaboration_invite", {
             p_book_author_id: authorId,
           });
 
-          if (error) throw error;
+          if (cancelError) {
+            if (!isMissingCancelInviteFunctionError(cancelError)) {
+              throw cancelError;
+            }
+
+            const { error: fallbackDeleteError } = await supabase
+              .from("book_authors")
+              .delete()
+              .eq("id", authorId);
+
+            if (fallbackDeleteError) throw fallbackDeleteError;
+          }
 
           toast({
             title: "Convite cancelado",
