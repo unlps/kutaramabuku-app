@@ -67,6 +67,41 @@ const Notifications = () => {
     return errorText.includes("cancel_book_collaboration_invite");
   };
 
+  const getNotificationResponseStatus = (notification: Notification) => {
+    return notification.data.response_status || (notification.is_read ? "accepted" : "pending");
+  };
+
+  const dedupeNotifications = (items: Notification[]) => {
+    const seen = new Set<string>();
+
+    return items.filter((notification) => {
+      const status = getNotificationResponseStatus(notification);
+
+      if (notification.type === "collaboration_request" && status === "pending") {
+        const key = `collaboration_request:${notification.data.book_author_id || `${notification.data.ebook_id || ""}:${notification.data.inviter_id || ""}`}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }
+
+      if (notification.type === "collaboration_invite_sent" && status === "pending") {
+        const key = `collaboration_invite_sent:${notification.data.book_author_id || `${notification.data.ebook_id || ""}:${notification.data.invited_user_id || ""}`}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }
+
+      if (notification.type === "follow_request" && !notification.is_read) {
+        const key = `follow_request:${notification.data.follower_id || ""}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }
+
+      return true;
+    });
+  };
+
   const loadNotifications = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -80,7 +115,7 @@ const Notifications = () => {
         ...n,
         data: (n.data as Notification['data']) || {}
       }));
-      setNotifications(typedNotifications);
+      setNotifications(dedupeNotifications(typedNotifications));
       await refreshUnreadCount();
       setSelectedCollaboration(null);
     } catch (error: any) {
@@ -411,9 +446,7 @@ const Notifications = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getCollaborationStatus = (notification: Notification) => {
-    return notification.data.response_status || (notification.is_read ? "accepted" : "pending");
-  };
+  const getCollaborationStatus = (notification: Notification) => getNotificationResponseStatus(notification);
 
   const getNotificationIcon = (notification: Notification) => {
     const { type, data } = notification;

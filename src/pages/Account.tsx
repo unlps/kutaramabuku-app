@@ -263,6 +263,47 @@ const Account = () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+  const notifyFollowEvent = async (params: {
+    targetUserId: string;
+    type: "follow_request" | "new_follower";
+    title: string;
+    message: string;
+    followerId: string;
+    followerName?: string | null;
+    followerAvatar?: string | null;
+  }) => {
+    const payload = {
+      follower_id: params.followerId,
+      follower_name: params.followerName || null,
+      follower_avatar: params.followerAvatar || null
+    };
+
+    const { error: rpcError } = await (supabase as any).rpc("create_system_notification", {
+      p_user_id: params.targetUserId,
+      p_type: params.type,
+      p_title: params.title,
+      p_message: params.message,
+      p_data: payload
+    });
+    if (!rpcError) return;
+
+    const rpcErrorText = `${rpcError?.message || ""} ${rpcError?.details || ""} ${rpcError?.hint || ""}`.toLowerCase();
+    if (!rpcErrorText.includes("create_system_notification")) {
+      console.error("Erro ao criar notificação de follow:", rpcError);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("notifications").insert({
+      user_id: params.targetUserId,
+      type: params.type,
+      title: params.title,
+      message: params.message,
+      data: payload
+    });
+    if (insertError) {
+      console.error("Erro no fallback de notificação de follow:", insertError);
+    }
+  };
   const handleFollow = async () => {
     if (!currentUserId || !profile) return;
     try {
@@ -281,6 +322,12 @@ const Account = () => {
           title: isFollowing ? "Deixou de seguir" : "Pedido cancelado"
         });
       } else {
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url")
+          .eq("id", currentUserId)
+          .single();
+
         // Check if target account is private
         if (profile.is_private) {
           // Create pending follow request
@@ -291,24 +338,14 @@ const Account = () => {
           });
           setFollowRequestPending(true);
 
-          // Fetch current user's profile for name/avatar
-          const { data: myProfile } = await supabase
-            .from("profiles")
-            .select("full_name, avatar_url")
-            .eq("id", currentUserId)
-            .single();
-
-          // Create notification for the target user
-          await supabase.rpc('create_system_notification', {
-            p_user_id: profile.id,
-            p_type: 'follow_request',
-            p_title: 'Pedido para seguir',
-            p_message: `${myProfile?.full_name || 'Alguém'} quer seguir você`,
-            p_data: {
-              follower_id: currentUserId,
-              follower_name: myProfile?.full_name || null,
-              follower_avatar: myProfile?.avatar_url || null,
-            }
+          await notifyFollowEvent({
+            targetUserId: profile.id,
+            type: "follow_request",
+            title: "Pedido para seguir",
+            message: `${myProfile?.full_name || "Alguém"} quer seguir você`,
+            followerId: currentUserId,
+            followerName: myProfile?.full_name,
+            followerAvatar: myProfile?.avatar_url
           });
 
           toast({
@@ -326,6 +363,17 @@ const Account = () => {
             ...prev,
             followers: prev.followers + 1
           }));
+
+          await notifyFollowEvent({
+            targetUserId: profile.id,
+            type: "new_follower",
+            title: "Novo seguidor",
+            message: `${myProfile?.full_name || "Alguém"} começou a seguir você`,
+            followerId: currentUserId,
+            followerName: myProfile?.full_name,
+            followerAvatar: myProfile?.avatar_url
+          });
+
           toast({
             title: "Seguindo"
           });
@@ -1113,9 +1161,6 @@ const Account = () => {
   </div>;
 };
 export default Account;
-
-
-
 
 
 
