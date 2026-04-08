@@ -29,6 +29,8 @@ interface Notification {
     ebook_title?: string;
     inviter_id?: string;
     inviter_name?: string;
+    invited_user_id?: string;
+    invited_user_name?: string;
     collaborator_id?: string;
     collaborator_name?: string;
     follower_id?: string;
@@ -36,7 +38,7 @@ interface Notification {
     follower_avatar?: string;
     acceptor_name?: string;
     acceptor_avatar?: string;
-    response_status?: "pending" | "accepted" | "rejected";
+    response_status?: "pending" | "accepted" | "rejected" | "cancelled";
     submission_id?: string;
     status?: string;
     review_notes?: string;
@@ -154,6 +156,38 @@ const Notifications = () => {
         title: "Erro ao processar resposta",
         description: error.message,
         variant: "destructive"
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleCancelSentInvite = async (notification: Notification) => {
+    setProcessingId(notification.id);
+
+    try {
+      const bookAuthorId = notification.data.book_author_id;
+      if (!bookAuthorId) {
+        throw new Error("ID do convite nÃ£o encontrado");
+      }
+
+      const { error } = await supabase.rpc("cancel_book_collaboration_invite", {
+        p_book_author_id: bookAuthorId,
+      });
+
+      if (error) throw error;
+
+      await loadNotifications();
+
+      toast({
+        title: "Convite cancelado",
+        description: "O convite pendente foi cancelado com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao cancelar convite",
+        description: error.message,
+        variant: "destructive",
       });
     } finally {
       setProcessingId(null);
@@ -383,6 +417,8 @@ const Notifications = () => {
     switch (type) {
       case 'collaboration_request':
         return <Users className="h-5 w-5 text-primary" />;
+      case 'collaboration_invite_sent':
+        return <UserPlus className="h-5 w-5 text-primary" />;
       case 'collaboration_accepted':
         return <UserCheck className="h-5 w-5 text-emerald-600" />;
       case 'collaboration_rejected':
@@ -493,7 +529,7 @@ const Notifications = () => {
           const filteredNotifications = notifications.filter(n => {
             if (activeTab === "all") return true;
             if (activeTab === "social") return ["follow_request", "follow_accepted", "new_follower"].includes(n.type);
-            if (activeTab === "colaboracao") return ["collaboration_invite", "collaboration_accepted", "collaboration_rejected"].includes(n.type);
+            if (activeTab === "colaboracao") return ["collaboration_request", "collaboration_invite_sent", "collaboration_accepted", "collaboration_rejected"].includes(n.type);
             if (activeTab === "livros") return ["book_purchase", "book_released", "book_downloaded"].includes(n.type);
             if (activeTab === "submissoes") return ["submission_reviewed"].includes(n.type);
             return true;
@@ -617,6 +653,61 @@ const Notifications = () => {
                             )}
                           >
                             {getCollaborationStatus(notification) === "accepted" ? "Convite aceite" : "Convite rejeitado"}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {notification.type === 'collaboration_invite_sent' && (
+                      <div className="mt-3 space-y-2 sm:mt-4">
+                        <div className="flex flex-wrap gap-2">
+                          {notification.data.ebook_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs sm:text-sm"
+                              onClick={() => navigate(`/editor?id=${notification.data.ebook_id}`)}
+                            >
+                              <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                              Abrir livro
+                            </Button>
+                          )}
+
+                          {(notification.data.response_status || "pending") === "pending" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancelSentInvite(notification)}
+                              disabled={processingId === notification.id}
+                              className="border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 h-8 text-xs sm:text-sm"
+                            >
+                              {processingId === notification.id ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
+                              ) : (
+                                <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
+                              Cancelar convite
+                            </Button>
+                          )}
+                        </div>
+
+                        {(notification.data.response_status || "pending") !== "pending" && (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "w-fit",
+                              notification.data.response_status === "accepted"
+                                ? "border-emerald-500/30 text-emerald-700"
+                                : notification.data.response_status === "rejected"
+                                  ? "border-red-500/30 text-red-600"
+                                  : "border-muted-foreground/30 text-muted-foreground"
+                            )}
+                          >
+                            {notification.data.response_status === "accepted"
+                              ? "Convite aceite"
+                              : notification.data.response_status === "rejected"
+                                ? "Convite rejeitado"
+                                : "Convite cancelado"}
                           </Badge>
                         )}
                       </div>
@@ -774,7 +865,7 @@ const Notifications = () => {
                     )}
 
                     {/* General actions for other notifications */}
-                    {notification.type !== 'collaboration_request' && notification.type !== 'collaboration_accepted' && notification.type !== 'collaboration_rejected' && notification.type !== 'follow_request' && notification.type !== 'follow_accepted' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
+                    {notification.type !== 'collaboration_request' && notification.type !== 'collaboration_invite_sent' && notification.type !== 'collaboration_accepted' && notification.type !== 'collaboration_rejected' && notification.type !== 'follow_request' && notification.type !== 'follow_accepted' && notification.type !== 'submission_reviewed' && notification.type !== 'book_released' && !notification.is_read && (
                       <Button
                         size="sm"
                         variant="ghost"

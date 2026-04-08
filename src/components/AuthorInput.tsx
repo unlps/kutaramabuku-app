@@ -64,6 +64,12 @@ export default function AuthorInput({
   }, [ebookId]);
 
   useEffect(() => {
+    if (!ebookId) {
+      setAuthors(initialAuthors);
+    }
+  }, [ebookId, initialAuthors]);
+
+  useEffect(() => {
     const searchUsers = async () => {
       if (inputValue.length < 2) {
         setSuggestions([]);
@@ -284,9 +290,21 @@ export default function AuthorInput({
 
     if (ebookId && authorToRemove?.userId) {
       try {
-        const { error } = await supabase.from("book_authors").delete().eq("id", authorId);
+        if (authorToRemove.status === "pending") {
+          const { error } = await supabase.rpc("cancel_book_collaboration_invite", {
+            p_book_author_id: authorId,
+          });
 
-        if (error) throw error;
+          if (error) throw error;
+
+          toast({
+            title: "Convite cancelado",
+            description: `${authorToRemove.name} foi removido dos convites pendentes.`,
+          });
+        } else {
+          const { error } = await supabase.from("book_authors").delete().eq("id", authorId);
+          if (error) throw error;
+        }
       } catch (error: any) {
         toast({
           title: "Erro ao remover autor",

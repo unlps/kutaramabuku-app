@@ -50,7 +50,7 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
   useEffect(() => {
     fetchGenres();
     parseAuthors();
-  }, []);
+  }, [ebook.id, ebook.author]);
 
   const fetchGenres = async () => {
     const { data } = await supabase.from('genres').select('*').order('name');
@@ -219,6 +219,7 @@ const EbookMetadataForm: React.FC<EbookMetadataFormProps> = ({ ebook, onContinue
             <div>
               <label className="text-sm font-medium mb-2 block">Autores</label>
               <AuthorInput
+                ebookId={ebook.id}
                 initialAuthors={authors}
                 onChange={(newAuthors) => setAuthors(newAuthors)}
               />
