@@ -700,7 +700,7 @@ const CompleteProfile = () => {
                 ? "A guardar..."
                 : currentStepIndex === STEP_ORDER.length - 1
                   ? "Concluir perfil"
-                  : "Pr�xima etapa"}
+                  : "Próxima etapa"}
             </Button>
           </div>
         </div>
@@ -710,7 +710,6 @@ const CompleteProfile = () => {
 };
 
 export default CompleteProfile;
-
 
 
 

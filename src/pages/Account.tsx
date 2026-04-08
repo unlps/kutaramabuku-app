@@ -707,33 +707,34 @@ const Account = () => {
 
     <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
       {/* Profile Header */}
-      <Card className="p-4 sm:p-6">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
+      <Card className="p-4 sm:p-6 overflow-hidden border shadow-sm">
+        <div className="-mx-4 -mt-4 mb-4 h-24 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.35),transparent_60%),linear-gradient(120deg,hsl(var(--muted)),hsl(var(--background)))] sm:-mx-6 sm:-mt-6 sm:mb-5" />
+        <div className="flex flex-col items-center gap-4 text-center -mt-14">
+          <Avatar className="h-24 w-24 sm:h-28 sm:w-28 ring-4 ring-background shadow-md">
             <AvatarImage src={profile?.avatar_url} />
             <AvatarFallback className="bg-gradient-primary text-white text-2xl sm:text-3xl">
               {profile?.full_name?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="w-full">
-            <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name || "UsuÃ¡rio"}</h2>
-            {profile?.username && <p className="text-muted-foreground text-sm">@{profile.username}</p>}
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{profile?.full_name || "Usuário"}</h2>
+            {profile?.username && <p className="text-muted-foreground text-sm mt-1">@{profile.username}</p>}
 
             {/* Stats */}
-            <div className="mt-4 flex justify-center gap-4 sm:gap-6">
-              <div className="text-center">
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <div className="text-center rounded-lg border bg-card p-3">
                 <div className="text-lg sm:text-xl font-bold">{stats.booksCreated}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Trabalhos</div>
               </div>
-              <div className="text-center cursor-pointer hover:opacity-80">
+              <div className="text-center rounded-lg border bg-card p-3">
                 <div className="text-lg sm:text-xl font-bold">{stats.followers}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Seguidores</div>
               </div>
-              <div className="text-center cursor-pointer hover:opacity-80">
+              <div className="text-center rounded-lg border bg-card p-3">
                 <div className="text-lg sm:text-xl font-bold">{stats.following}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Seguindo</div>
               </div>
-              <div className="text-center">
+              <div className="text-center rounded-lg border bg-card p-3">
                 <div className="text-lg sm:text-xl font-bold">{stats.booksRead}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground">Lidos</div>
               </div>
@@ -743,12 +744,12 @@ const Account = () => {
 
         {(profile?.short_bio || profile?.detailed_bio || (canViewPublicContent && (hasIdentitySection || hasWritingSection || hasPresenceSection))) && (
           <div className="mx-auto mt-8 w-full max-w-4xl space-y-6">
-            {(profile?.short_bio || profile?.detailed_bio) && <div className="space-y-4">
-              {profile?.short_bio && <p className="text-base font-semibold leading-relaxed text-foreground text-justify">{profile.short_bio}</p>}
-              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground text-justify">{profile.detailed_bio}</p>}
+            {(profile?.short_bio || profile?.detailed_bio) && <div className="space-y-4 rounded-xl border bg-muted/20 p-4 sm:p-5">
+              {profile?.short_bio && <p className="text-base font-semibold leading-relaxed text-foreground">{profile.short_bio}</p>}
+              {profile?.detailed_bio && <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">{profile.detailed_bio}</p>}
             </div>}
 
-            {canViewPublicContent && (hasIdentitySection || hasWritingSection || hasPresenceSection) && <div className="border-y border-border/70 py-6">
+            {canViewPublicContent && (hasIdentitySection || hasWritingSection || hasPresenceSection) && <div className="rounded-xl border border-border/70 bg-card/70 p-5">
               <div className="grid gap-x-16 gap-y-6 md:grid-cols-2">
                 <div className="space-y-5 text-sm">
                   {profile?.nationality && <div className="space-y-1.5">
@@ -1112,7 +1113,6 @@ const Account = () => {
   </div>;
 };
 export default Account;
-
 
 
 
