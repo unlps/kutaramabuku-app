@@ -182,12 +182,25 @@ const Auth = () => {
         return;
       }
 
+      const normalizedFullName = fullName.trim();
+      const { data: fullNameStatus, error: fullNameCheckError } = await (supabase as any).rpc("get_full_name_registration_status", {
+        p_full_name: normalizedFullName,
+      });
+
+      if (fullNameCheckError) throw fullNameCheckError;
+      if (fullNameStatus === "registered") {
+        throw new Error("Este nome ja esta associado a uma conta.");
+      }
+      if (fullNameStatus === "pending_verification") {
+        throw new Error("Este nome ja esta reservado por um registo pendente.");
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: fullName,
+            full_name: normalizedFullName,
           },
         },
       });
