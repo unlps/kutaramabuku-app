@@ -189,12 +189,61 @@ const Account = () => {
       .select("ebook_id, ebooks(*)")
       .eq("user_id", profileId)
       .eq("status", "accepted");
-      
+
     if (collabDataRaw) {
+      const ebookIds = Array.from(
+        new Set(
+          collabDataRaw
+            .map((item) => item.ebook_id)
+            .filter((ebookId): ebookId is string => Boolean(ebookId))
+        )
+      );
+
+      let acceptedCollaborativeBookIds = new Set<string>();
+
+      if (ebookIds.length > 0) {
+        const { data: acceptedAuthors } = await supabase
+          .from("book_authors")
+          .select("ebook_id, user_id")
+          .in("ebook_id", ebookIds)
+          .eq("status", "accepted");
+
+        const authorsByBook = new Map<string, Set<string>>();
+
+        acceptedAuthors?.forEach((authorRow) => {
+          if (!authorRow.ebook_id || !authorRow.user_id) return;
+
+          if (!authorsByBook.has(authorRow.ebook_id)) {
+            authorsByBook.set(authorRow.ebook_id, new Set<string>());
+          }
+
+          authorsByBook.get(authorRow.ebook_id)?.add(authorRow.user_id);
+        });
+
+        acceptedCollaborativeBookIds = new Set(
+          Array.from(authorsByBook.entries())
+            .filter(([, authorIds]) => authorIds.size > 1)
+            .map(([ebookId]) => ebookId)
+        );
+      }
+
       setCollabBooks(
         collabDataRaw
-          .filter(item => item.ebooks)
-          .map(item => item.ebooks)
+          .filter((item) => {
+            const ebook = item.ebooks as any;
+            if (!ebook) return false;
+
+            const listedAuthorsCount = String(ebook.author || "")
+              .split(",")
+              .map((authorName) => authorName.trim())
+              .filter(Boolean).length;
+
+            return (
+              listedAuthorsCount > 1 &&
+              acceptedCollaborativeBookIds.has(item.ebook_id)
+            );
+          })
+          .map((item) => item.ebooks)
       );
     }
 
